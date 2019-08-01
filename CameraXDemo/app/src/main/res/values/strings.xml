@@ -3,4 +3,7 @@
     <string name="action_settings">Settings</string>
     <string name="message_no_permissions">The app cannot work without permissions</string>
     <string name="label_ok">OK</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

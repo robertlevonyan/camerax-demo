@@ -1,3 +1,8 @@
 <resources>
+    <dimen name="half_margin">8dp</dimen>
     <dimen name="fab_margin">16dp</dimen>
+    <dimen name="double_margin">32dp</dimen>
+
+    <dimen name="button_size_big">56dp</dimen>
+    <dimen name="button_size_small">36dp</dimen>
 </resources>
