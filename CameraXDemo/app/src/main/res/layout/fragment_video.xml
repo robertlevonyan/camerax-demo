@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:background="@android:color/black"
     android:fitsSystemWindows="true"
-    tools:context=".video.VideoFragment">
+    tools:context=".fragments.VideoFragment">
 
     <TextureView
         android:id="@+id/viewFinder"

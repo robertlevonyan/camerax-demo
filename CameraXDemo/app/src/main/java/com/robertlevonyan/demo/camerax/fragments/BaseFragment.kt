@@ -1,29 +1,46 @@
-package com.robertlevonyan.demo.camerax
+package com.robertlevonyan.demo.camerax.fragments
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.ViewGroup
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.google.android.material.snackbar.Snackbar
+import com.robertlevonyan.demo.camerax.R
 
-abstract class BaseFragment : Fragment() {
+abstract class BaseFragment(private val fragmentLayout: Int) : Fragment() {
     companion object {
         private const val REQUEST_CODE_PERMISSIONS = 10
     }
 
-    private val PERMISSIONS = arrayOf(
+    private val permissions = arrayOf(
         Manifest.permission.CAMERA,
         Manifest.permission.READ_EXTERNAL_STORAGE,
         Manifest.permission.WRITE_EXTERNAL_STORAGE
     )
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        retainInstance = true
+    }
+
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ) = inflater.inflate(fragmentLayout, container, false) ?: null
 
     override fun onResume() {
         super.onResume()
         if (allPermissionsGranted()) {
             onPermissionGranted()
         } else {
-            ActivityCompat.requestPermissions(requireActivity(), PERMISSIONS, REQUEST_CODE_PERMISSIONS)
+            ActivityCompat.requestPermissions(
+                requireActivity(), permissions,
+                REQUEST_CODE_PERMISSIONS
+            )
         }
     }
 
@@ -42,7 +59,7 @@ abstract class BaseFragment : Fragment() {
         }
     }
 
-    private fun allPermissionsGranted() = PERMISSIONS.all {
+    private fun allPermissionsGranted() = permissions.all {
         ContextCompat.checkSelfPermission(requireContext(), it) == PackageManager.PERMISSION_GRANTED
     }
 

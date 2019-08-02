@@ -8,7 +8,7 @@ buildscript {
     ext.camerax_version = "1.0.0-alpha03"
     ext.navigation_version = "2.1.0-beta02"
     ext.lifecycle_version = "2.2.0-alpha02"
-//    ext.lifecycle_version = "2.0.0"
+    ext.glide_version = "4.9.0"
 
     repositories {
         google()
@@ -16,8 +16,9 @@ buildscript {
         
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.4.2'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath 'com.android.tools.build:gradle:3.4.2'
+        classpath "androidx.navigation:navigation-safe-args-gradle-plugin:2.0.0"
     }
 }
 

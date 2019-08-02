@@ -7,7 +7,7 @@
 
     <fragment
         android:id="@+id/cameraFragment"
-        android:name="com.robertlevonyan.demo.camerax.camera.CameraFragment"
+        android:name="com.robertlevonyan.demo.camerax.fragments.CameraFragment"
         android:label="fragment_camera"
         tools:layout="@layout/fragment_camera" >
         <action
@@ -25,12 +25,12 @@
     </fragment>
     <fragment
         android:id="@+id/previewFragment"
-        android:name="com.robertlevonyan.demo.camerax.preview.PreviewFragment"
+        android:name="com.robertlevonyan.demo.camerax.fragments.PreviewFragment"
         android:label="fragment_preview"
         tools:layout="@layout/fragment_preview" />
     <fragment
         android:id="@+id/videoFragment"
-        android:name="com.robertlevonyan.demo.camerax.video.VideoFragment"
+        android:name="com.robertlevonyan.demo.camerax.fragments.VideoFragment"
         android:label="fragment_video"
         tools:layout="@layout/fragment_video" >
         <action
