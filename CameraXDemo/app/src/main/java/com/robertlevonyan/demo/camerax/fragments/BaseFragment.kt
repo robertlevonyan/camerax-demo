@@ -4,17 +4,22 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.databinding.DataBindingUtil
+import androidx.databinding.ViewDataBinding
 import androidx.fragment.app.Fragment
 import com.google.android.material.snackbar.Snackbar
 import com.robertlevonyan.demo.camerax.R
 
-abstract class BaseFragment(private val fragmentLayout: Int) : Fragment() {
+abstract class BaseFragment<B : ViewDataBinding>(private val fragmentLayout: Int) : Fragment() {
     companion object {
         private const val REQUEST_CODE_PERMISSIONS = 10
     }
+
+    protected lateinit var binding: B
 
     private val permissions = arrayOf(
         Manifest.permission.CAMERA,
@@ -28,9 +33,11 @@ abstract class BaseFragment(private val fragmentLayout: Int) : Fragment() {
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ) = inflater.inflate(fragmentLayout, container, false) ?: null
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+    ): View {
+        binding = DataBindingUtil.inflate(inflater, fragmentLayout, container, false)
+        return binding.root
+    }
 
     override fun onResume() {
         super.onResume()
