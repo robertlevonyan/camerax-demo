@@ -3,9 +3,11 @@ package com.robertlevonyan.demo.camerax.fragments
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.Environment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.OnBackPressedCallback
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
@@ -13,6 +15,7 @@ import androidx.databinding.ViewDataBinding
 import androidx.fragment.app.Fragment
 import com.google.android.material.snackbar.Snackbar
 import com.robertlevonyan.demo.camerax.R
+import java.io.File
 
 abstract class BaseFragment<B : ViewDataBinding>(private val fragmentLayout: Int) : Fragment() {
     companion object {
@@ -20,6 +23,7 @@ abstract class BaseFragment<B : ViewDataBinding>(private val fragmentLayout: Int
     }
 
     protected lateinit var binding: B
+    protected lateinit var outputDirectory: File
 
     private val permissions = arrayOf(
         Manifest.permission.CAMERA,
@@ -35,6 +39,15 @@ abstract class BaseFragment<B : ViewDataBinding>(private val fragmentLayout: Int
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
+        requireActivity().onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() { onBackPressed() }
+        })
+
+        outputDirectory = File(
+            requireContext().getExternalFilesDir(Environment.DIRECTORY_DCIM)?.absolutePath
+                ?: requireContext().externalMediaDirs.first().absolutePath
+        )
+
         binding = DataBindingUtil.inflate(inflater, fragmentLayout, container, false)
         return binding.root
     }
@@ -71,4 +84,6 @@ abstract class BaseFragment<B : ViewDataBinding>(private val fragmentLayout: Int
     }
 
     abstract fun onPermissionGranted()
+
+    abstract fun onBackPressed()
 }

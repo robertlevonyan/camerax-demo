@@ -2,6 +2,7 @@ package com.robertlevonyan.demo.camerax.utils
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
+import android.content.res.Configuration
 import android.view.View
 import android.view.ViewAnimationUtils
 import android.view.ViewGroup
@@ -50,24 +51,24 @@ fun ImageButton.toggleButton(
 }
 
 fun ViewGroup.circularReveal(button: ImageButton) {
+    this.visibility = View.VISIBLE
     ViewAnimationUtils.createCircularReveal(
         this,
-        button.x.toInt() + button.width  / 2,
+        button.x.toInt() + button.width / 2,
         button.y.toInt() + button.height / 2,
         0f,
-        this.width.toFloat()
+        if (button.context.resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) this.width.toFloat() else this.height.toFloat()
     ).apply {
         duration = 500
-        doOnStart { this@circularReveal.visibility = View.VISIBLE }
     }.start()
 }
 
-fun ViewGroup.circularClose(button: ImageButton, action: () -> Unit) {
+fun ViewGroup.circularClose(button: ImageButton, action: () -> Unit = {}) {
     ViewAnimationUtils.createCircularReveal(
         this,
-        button.x.toInt() + button.width  / 2,
+        button.x.toInt() + button.width / 2,
         button.y.toInt() + button.height / 2,
-        this.width.toFloat(),
+        if (button.context.resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) this.width.toFloat() else this.height.toFloat(),
         0f
     ).apply {
         duration = 500

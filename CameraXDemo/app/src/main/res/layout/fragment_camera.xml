@@ -3,6 +3,20 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <data>
+        <variable
+            name="fragment"
+            type="com.robertlevonyan.demo.camerax.fragments.CameraFragment" />
+
+        <variable
+            name="timer"
+            type="com.robertlevonyan.demo.camerax.utils.CameraTimer" />
+
+        <variable
+            name="flash"
+            type="androidx.camera.core.FlashMode" />
+    </data>
+
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -58,6 +72,7 @@
             android:layout_height="@dimen/button_size_small"
             android:background="@android:color/transparent"
             android:elevation="1dp"
+            android:onClick="@{()-> fragment.openPreview()}"
             android:scaleType="centerCrop"
             android:src="@drawable/ic_no_picture"
             app:layout_constraintBottom_toBottomOf="@id/fabTakePicture"
@@ -71,6 +86,7 @@
             android:layout_height="@dimen/button_size_small"
             android:background="@drawable/bg_button_round"
             android:elevation="1dp"
+            android:onClick="@{() -> fragment.toggleCamera()}"
             android:padding="@dimen/half_margin"
             android:scaleType="centerInside"
             android:src="@drawable/ic_outline_camera_front"
@@ -86,7 +102,7 @@
             android:alpha="0.4"
             android:background="@android:color/black"
             android:elevation="1dp"
-            app:layout_constraintBottom_toBottomOf="@id/buttonHDR"
+            app:layout_constraintBottom_toBottomOf="@id/buttonFlash"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -97,44 +113,15 @@
             android:layout_height="@dimen/button_size_small"
             android:background="@android:color/transparent"
             android:elevation="1dp"
+            android:onClick="@{()->fragment.selectTimer()}"
             android:padding="@dimen/half_margin"
             android:scaleType="centerInside"
             android:src="@drawable/ic_timer_off"
-            app:layout_constraintBottom_toBottomOf="@id/buttonHDR"
+            app:layout_constraintBottom_toBottomOf="@id/buttonFlash"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.125"
+            app:layout_constraintHorizontal_bias="0.2"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@id/buttonHDR" />
-
-        <ImageButton
-            android:id="@+id/buttonHDR"
-            android:layout_width="@dimen/button_size_small"
-            android:layout_height="@dimen/button_size_small"
-            android:layout_marginTop="@dimen/medium_margin"
-            android:background="@android:color/transparent"
-            android:elevation="1dp"
-            android:padding="@dimen/half_margin"
-            android:scaleType="centerInside"
-            android:src="@drawable/ic_hdr_off"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.375"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <ImageButton
-            android:id="@+id/buttonFlash"
-            android:layout_width="@dimen/button_size_small"
-            android:layout_height="@dimen/button_size_small"
-            android:background="@android:color/transparent"
-            android:elevation="1dp"
-            android:padding="@dimen/half_margin"
-            android:scaleType="centerInside"
-            android:src="@drawable/ic_flash_off"
-            app:layout_constraintBottom_toBottomOf="@id/buttonHDR"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.625"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@id/buttonHDR" />
+            app:layout_constraintTop_toTopOf="@id/buttonFlash" />
 
         <ImageButton
             android:id="@+id/buttonGrid"
@@ -142,14 +129,31 @@
             android:layout_height="@dimen/button_size_small"
             android:background="@android:color/transparent"
             android:elevation="1dp"
+            android:onClick="@{()->fragment.toggleGrid()}"
             android:padding="@dimen/half_margin"
             android:scaleType="centerInside"
             android:src="@drawable/ic_grid_off"
-            app:layout_constraintBottom_toBottomOf="@id/buttonHDR"
+            app:layout_constraintBottom_toBottomOf="@id/buttonFlash"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.875"
+            app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@id/buttonHDR" />
+            app:layout_constraintTop_toTopOf="@id/buttonFlash" />
+
+        <ImageButton
+            android:id="@+id/buttonFlash"
+            android:layout_width="@dimen/button_size_small"
+            android:layout_height="@dimen/button_size_small"
+            android:layout_marginTop="@dimen/medium_margin"
+            android:background="@android:color/transparent"
+            android:elevation="1dp"
+            android:onClick="@{() -> fragment.selectFlash()}"
+            android:padding="@dimen/half_margin"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_flash_off"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.8"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <View
             android:id="@+id/gridVertical1"
@@ -232,6 +236,7 @@
                 android:layout_height="@dimen/button_size_small"
                 android:layout_weight="1"
                 android:background="@android:color/transparent"
+                android:onClick="@{() -> fragment.closeTimerAndSelect(timer.OFF)}"
                 android:src="@drawable/ic_timer_off" />
 
             <ImageButton
@@ -240,6 +245,7 @@
                 android:layout_height="@dimen/button_size_small"
                 android:layout_weight="1"
                 android:background="@android:color/transparent"
+                android:onClick="@{() -> fragment.closeTimerAndSelect(timer.S3)}"
                 android:src="@drawable/ic_timer_3" />
 
             <ImageButton
@@ -248,6 +254,7 @@
                 android:layout_height="@dimen/button_size_small"
                 android:layout_weight="1"
                 android:background="@android:color/transparent"
+                android:onClick="@{() -> fragment.closeTimerAndSelect(timer.S10)}"
                 android:src="@drawable/ic_timer_10" />
 
         </LinearLayout>
@@ -274,6 +281,7 @@
                 android:layout_height="@dimen/button_size_small"
                 android:layout_weight="1"
                 android:background="@android:color/transparent"
+                android:onClick="@{()->fragment.closeFlashAndSelect(flash.OFF)}"
                 android:src="@drawable/ic_flash_off" />
 
             <ImageButton
@@ -282,6 +290,7 @@
                 android:layout_height="@dimen/button_size_small"
                 android:layout_weight="1"
                 android:background="@android:color/transparent"
+                android:onClick="@{()->fragment.closeFlashAndSelect(flash.AUTO)}"
                 android:src="@drawable/ic_flash_auto" />
 
             <ImageButton
@@ -290,6 +299,7 @@
                 android:layout_height="@dimen/button_size_small"
                 android:layout_weight="1"
                 android:background="@android:color/transparent"
+                android:onClick="@{()->fragment.closeFlashAndSelect(flash.ON)}"
                 android:src="@drawable/ic_flash_on" />
 
         </LinearLayout>

@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.res.Configuration
 import android.hardware.display.DisplayManager
 import android.os.Bundle
-import android.os.Environment
 import android.util.DisplayMetrics
 import android.util.Log
 import android.util.Rational
@@ -25,12 +24,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
+import kotlin.properties.Delegates
 
 class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_camera) {
     companion object {
         private const val TAG = "CameraFragment"
         private const val KEY_FLASH = "sPrefFlash"
-        private const val KEY_HDR = "sPrefHdr"
         private const val KEY_GRID = "sPrefGrid"
     }
 
@@ -39,12 +38,18 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
     private lateinit var preview: Preview
     private lateinit var imageCapture: ImageCapture
     private lateinit var imageAnalyzer: ImageAnalysis
-    private lateinit var outputDirectory: File
 
     private var displayId = -1
     private var lensFacing = CameraX.LensFacing.BACK
-    private var flashMode = FlashMode.OFF.ordinal
-    private var hasHDR = false
+    private var flashMode by Delegates.observable(FlashMode.OFF.ordinal) { _, _, new ->
+        binding.buttonFlash.setImageResource(
+            when (new) {
+                FlashMode.ON.ordinal -> R.drawable.ic_flash_on
+                FlashMode.AUTO.ordinal -> R.drawable.ic_flash_auto
+                else -> R.drawable.ic_flash_off
+            }
+        )
+    }
     private var hasGrid = false
     private var selectedTimer = CameraTimer.OFF
 
@@ -65,17 +70,13 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
         super.onViewCreated(view, savedInstanceState)
         prefs = SharedPrefsManager.newInstance(requireContext())
         flashMode = prefs.getInt(KEY_FLASH, FlashMode.OFF.ordinal)
-        hasHDR = prefs.getBoolean(KEY_HDR, false)
         hasGrid = prefs.getBoolean(KEY_GRID, false)
-        outputDirectory = File(
-            requireContext().getExternalFilesDir(Environment.DIRECTORY_DCIM)?.absolutePath
-                ?: requireContext().externalMediaDirs.first().absolutePath
-        )
         initViews()
 
         displayManager = requireContext().getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
         displayManager.registerDisplayListener(displayListener, null)
 
+        binding.fragment = this
         binding.viewFinder.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
             override fun onViewDetachedFromWindow(v: View) =
                 displayManager.registerDisplayListener(displayListener, null)
@@ -85,28 +86,14 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
     }
 
     private fun initViews() {
-        binding.buttonHDR.setImageResource(if (hasHDR) R.drawable.ic_hdr_on else R.drawable.ic_hdr_off)
         binding.buttonGrid.setImageResource(if (hasGrid) R.drawable.ic_grid_on else R.drawable.ic_grid_off)
         binding.groupGridLines.visibility = if (hasGrid) View.VISIBLE else View.GONE
-
-        binding.buttonSwitchCamera.setOnClickListener { toggleCamera() }
-        binding.buttonGallery.setOnClickListener { openPreview(it) }
-        binding.buttonTimer.setOnClickListener { selectTimer() }
-        binding.buttonTimerOff.setOnClickListener { closeTimerAndSelect(CameraTimer.OFF) }
-        binding.buttonTimer3.setOnClickListener { closeTimerAndSelect(CameraTimer.S3) }
-        binding.buttonTimer10.setOnClickListener { closeTimerAndSelect(CameraTimer.S10) }
-        binding.buttonHDR.setOnClickListener { toggleHDR() }
-        binding.buttonFlash.setOnClickListener { selectFlash() }
-        binding.buttonFlashOff.setOnClickListener { closeFlashAndSelect(FlashMode.OFF) }
-        binding.buttonFlashOn.setOnClickListener { closeFlashAndSelect(FlashMode.ON) }
-        binding.buttonFlashAuto.setOnClickListener { closeFlashAndSelect(FlashMode.AUTO) }
-        binding.buttonGrid.setOnClickListener { toggleGrid() }
 
         adjustInsets()
     }
 
     @SuppressLint("RestrictedApi")
-    private fun toggleCamera() {
+    fun toggleCamera() {
         lensFacing = if (lensFacing == CameraX.LensFacing.FRONT) {
             binding.buttonSwitchCamera.animate().rotationY(0f).duration = 200
             lifecycleScope.launch(Dispatchers.Main) {
@@ -131,13 +118,13 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
         startCamera()
     }
 
-    private fun openPreview(view: View) {
-        Navigation.findNavController(view).navigate(R.id.action_camera_to_preview)
+    fun openPreview() {
+        view?.let { Navigation.findNavController(it).navigate(R.id.action_camera_to_preview) }
     }
 
-    private fun selectTimer() = binding.layoutTimerOptions.circularReveal(binding.buttonTimer)
+    fun selectTimer() = binding.layoutTimerOptions.circularReveal(binding.buttonTimer)
 
-    private fun closeTimerAndSelect(timer: CameraTimer) =
+    fun closeTimerAndSelect(timer: CameraTimer) =
         binding.layoutTimerOptions.circularClose(binding.buttonTimer) {
             binding.buttonTimer.setImageResource(
                 when (timer) {
@@ -157,38 +144,20 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
             )
         }
 
-    private fun toggleHDR() {
-        binding.buttonHDR.toggleButton(hasHDR, 360f, R.drawable.ic_hdr_off, R.drawable.ic_hdr_on) { flag ->
-            hasHDR = flag
-            prefs.putBoolean(KEY_HDR, flag)
-        }
-    }
+    fun selectFlash() = binding.layoutFlashOptions.circularReveal(binding.buttonFlash)
 
-    private fun selectFlash() = binding.layoutFlashOptions.circularReveal(binding.buttonFlash)
-
-    private fun closeFlashAndSelect(flash: FlashMode) =
+    fun closeFlashAndSelect(flash: FlashMode) =
         binding.layoutFlashOptions.circularClose(binding.buttonFlash) {
-            binding.buttonFlash.setImageResource(
-                when (flash) {
-                    FlashMode.ON -> {
-                        flashMode = FlashMode.ON.ordinal
-                        R.drawable.ic_flash_on
-                    }
-                    FlashMode.AUTO -> {
-                        flashMode = FlashMode.AUTO.ordinal
-                        R.drawable.ic_flash_auto
-                    }
-                    else -> {
-                        flashMode = FlashMode.OFF.ordinal
-                        R.drawable.ic_flash_off
-                    }
-                }
-            )
+            flashMode = when (flash) {
+                FlashMode.ON -> FlashMode.ON.ordinal
+                FlashMode.AUTO -> FlashMode.AUTO.ordinal
+                else -> FlashMode.OFF.ordinal
+            }
             prefs.putInt(KEY_FLASH, flashMode)
-            recreateCamera()
+            imageCapture.flashMode = getFlashMode()
         }
 
-    private fun toggleGrid() {
+    fun toggleGrid() {
         binding.buttonGrid.toggleButton(hasGrid, 180f, R.drawable.ic_grid_off, R.drawable.ic_grid_on) { flag ->
             hasGrid = flag
             prefs.putBoolean(KEY_GRID, flag)
@@ -199,14 +168,14 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
     private fun adjustInsets() {
         if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
             ViewCompat.requestApplyInsets(binding.fabTakePicture)
-            ViewCompat.requestApplyInsets(binding.buttonHDR)
+            ViewCompat.requestApplyInsets(binding.buttonFlash)
             ViewCompat.requestApplyInsets(binding.layoutTimerOptions)
             ViewCompat.setOnApplyWindowInsetsListener(binding.fabTakePicture) { v, insets ->
                 val params = v.layoutParams as ViewGroup.MarginLayoutParams
                 params.bottomMargin = insets.systemWindowInsetBottom * 2
                 insets.consumeSystemWindowInsets()
             }
-            ViewCompat.setOnApplyWindowInsetsListener(binding.buttonHDR) { v, insets ->
+            ViewCompat.setOnApplyWindowInsetsListener(binding.buttonFlash) { v, insets ->
                 val params = v.layoutParams as ViewGroup.MarginLayoutParams
                 params.topMargin = insets.systemWindowInsetTop * 2
                 insets.consumeSystemWindowInsets()
@@ -317,5 +286,13 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
     override fun onDestroyView() {
         super.onDestroyView()
         displayManager.unregisterDisplayListener(displayListener)
+    }
+
+    override fun onBackPressed() {
+        when {
+            binding.layoutTimerOptions.visibility == View.VISIBLE -> binding.layoutTimerOptions.circularClose(binding.buttonTimer)
+            binding.layoutFlashOptions.visibility == View.VISIBLE -> binding.layoutFlashOptions.circularClose(binding.buttonFlash)
+            else -> requireActivity().finish()
+        }
     }
 }
