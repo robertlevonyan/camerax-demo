@@ -8,10 +8,12 @@ import android.os.Bundle
 import android.util.DisplayMetrics
 import android.util.Log
 import android.util.Rational
+import android.view.GestureDetector
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.camera.core.*
+import androidx.core.view.GestureDetectorCompat
 import androidx.core.view.ViewCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
@@ -66,6 +68,7 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
         } ?: Unit
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         prefs = SharedPrefsManager.newInstance(requireContext())
@@ -83,6 +86,15 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
 
             override fun onViewAttachedToWindow(v: View) = displayManager.unregisterDisplayListener(displayListener)
         })
+
+        val swipeGestures = SwipeGestureDetector().apply {
+            setSwipeCallback(right = { Navigation.findNavController(view).navigate(R.id.action_camera_to_video) })
+        }
+        val gestureDetectorCompat = GestureDetector(requireContext(), swipeGestures)
+        view.setOnTouchListener { _, motionEvent ->
+            if (gestureDetectorCompat.onTouchEvent(motionEvent)) return@setOnTouchListener false
+            return@setOnTouchListener true
+        }
     }
 
     private fun initViews() {
@@ -118,9 +130,7 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
         startCamera()
     }
 
-    fun openPreview() {
-        view?.let { Navigation.findNavController(it).navigate(R.id.action_camera_to_preview) }
-    }
+    fun openPreview() = view?.let { Navigation.findNavController(it).navigate(R.id.action_camera_to_preview) }
 
     fun selectTimer() = binding.layoutTimerOptions.circularReveal(binding.buttonTimer)
 
