@@ -1,4 +1,4 @@
-package com.robertlevonyan.demo.camerax.utils
+package com.robertlevonyan.demo.camerax.enums
 
 enum class CameraRatio {
     RATIO_1_1,

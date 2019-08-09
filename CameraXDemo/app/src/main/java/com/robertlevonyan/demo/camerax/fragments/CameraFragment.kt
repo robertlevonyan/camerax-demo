@@ -10,17 +10,15 @@ import android.util.Log
 import android.util.Rational
 import android.view.GestureDetector
 import android.view.View
-import android.view.ViewGroup
 import android.widget.Toast
 import androidx.camera.core.*
-import androidx.core.view.GestureDetectorCompat
-import androidx.core.view.ViewCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.RequestOptions
 import com.robertlevonyan.demo.camerax.R
 import com.robertlevonyan.demo.camerax.databinding.FragmentCameraBinding
+import com.robertlevonyan.demo.camerax.enums.CameraTimer
 import com.robertlevonyan.demo.camerax.utils.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -31,8 +29,8 @@ import kotlin.properties.Delegates
 class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_camera) {
     companion object {
         private const val TAG = "CameraFragment"
-        private const val KEY_FLASH = "sPrefFlash"
-        private const val KEY_GRID = "sPrefGrid"
+        const val KEY_FLASH = "sPrefFlashCamera"
+        const val KEY_GRID = "sPrefGridCamera"
     }
 
     private lateinit var displayManager: DisplayManager
@@ -60,7 +58,6 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
         override fun onDisplayRemoved(displayId: Int) = Unit
         override fun onDisplayChanged(displayId: Int) = view?.let { view ->
             if (displayId == this@CameraFragment.displayId) {
-                Log.d(TAG, "Rotation changed: ${view.display.rotation}")
                 preview.setTargetRotation(view.display.rotation)
                 imageCapture.setTargetRotation(view.display.rotation)
                 imageAnalyzer.setTargetRotation(view.display.rotation)
@@ -100,27 +97,28 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
     private fun initViews() {
         binding.buttonGrid.setImageResource(if (hasGrid) R.drawable.ic_grid_on else R.drawable.ic_grid_off)
         binding.groupGridLines.visibility = if (hasGrid) View.VISIBLE else View.GONE
-
         adjustInsets()
     }
 
-    @SuppressLint("RestrictedApi")
-    fun toggleCamera() {
-        lensFacing = if (lensFacing == CameraX.LensFacing.FRONT) {
-            binding.buttonSwitchCamera.animate().rotationY(0f).duration = 200
-            lifecycleScope.launch(Dispatchers.Main) {
-                delay(100)
-                binding.buttonSwitchCamera.setImageResource(R.drawable.ic_outline_camera_front)
-            }
-            CameraX.LensFacing.BACK
-        } else {
-            binding.buttonSwitchCamera.animate().rotationY(180f).duration = 200
-            lifecycleScope.launch(Dispatchers.Main) {
-                delay(100)
-                binding.buttonSwitchCamera.setImageResource(R.drawable.ic_outline_camera_rear)
-            }
-            CameraX.LensFacing.FRONT
+    private fun adjustInsets() {
+        binding.viewFinder.fitSystemWindows()
+        binding.fabTakePicture.onWindowInsets { view, windowInsets ->
+            if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT)
+                view.bottomMargin = windowInsets.systemWindowInsetBottom
+            else view.endMargin = windowInsets.systemWindowInsetRight
         }
+        binding.buttonFlash.onWindowInsets { view, windowInsets ->
+            view.topMargin = windowInsets.systemWindowInsetTop
+        }
+    }
+
+    @SuppressLint("RestrictedApi")
+    fun toggleCamera() = binding.buttonSwitchCamera.toggleButton(
+        lensFacing == CameraX.LensFacing.BACK, 180f,
+        R.drawable.ic_outline_camera_rear, R.drawable.ic_outline_camera_front
+    ) {
+        lensFacing = if (it) CameraX.LensFacing.BACK else CameraX.LensFacing.FRONT
+
         CameraX.getCameraWithLensFacing(lensFacing)
         recreateCamera()
     }
@@ -130,7 +128,10 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
         startCamera()
     }
 
-    fun openPreview() = view?.let { Navigation.findNavController(it).navigate(R.id.action_camera_to_preview) }
+    fun openPreview() {
+        if (!outputDirectory.listFiles().isNullOrEmpty())
+            view?.let { Navigation.findNavController(it).navigate(R.id.action_camera_to_preview) }
+    }
 
     fun selectTimer() = binding.layoutTimerOptions.circularReveal(binding.buttonTimer)
 
@@ -172,29 +173,6 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
             hasGrid = flag
             prefs.putBoolean(KEY_GRID, flag)
             binding.groupGridLines.visibility = if (flag) View.VISIBLE else View.GONE
-        }
-    }
-
-    private fun adjustInsets() {
-        if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
-            ViewCompat.requestApplyInsets(binding.fabTakePicture)
-            ViewCompat.requestApplyInsets(binding.buttonFlash)
-            ViewCompat.requestApplyInsets(binding.layoutTimerOptions)
-            ViewCompat.setOnApplyWindowInsetsListener(binding.fabTakePicture) { v, insets ->
-                val params = v.layoutParams as ViewGroup.MarginLayoutParams
-                params.bottomMargin = insets.systemWindowInsetBottom * 2
-                insets.consumeSystemWindowInsets()
-            }
-            ViewCompat.setOnApplyWindowInsetsListener(binding.buttonFlash) { v, insets ->
-                val params = v.layoutParams as ViewGroup.MarginLayoutParams
-                params.topMargin = insets.systemWindowInsetTop * 2
-                insets.consumeSystemWindowInsets()
-            }
-            ViewCompat.setOnApplyWindowInsetsListener(binding.layoutTimerOptions) { v, insets ->
-                val params = v.layoutParams as ViewGroup.MarginLayoutParams
-                params.topMargin = insets.systemWindowInsetTop * 2
-                insets.consumeSystemWindowInsets()
-            }
         }
     }
 
@@ -270,7 +248,6 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
             override fun onImageSaved(file: File) {
                 setGalleryThumbnail(file)
                 val msg = "Photo saved in ${file.absolutePath}"
-                Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
                 Log.d("CameraXDemo", msg)
             }
 

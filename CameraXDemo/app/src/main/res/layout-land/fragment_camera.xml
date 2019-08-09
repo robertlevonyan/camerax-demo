@@ -11,7 +11,7 @@
 
         <variable
             name="timer"
-            type="com.robertlevonyan.demo.camerax.utils.CameraTimer" />
+            type="com.robertlevonyan.demo.camerax.enums.CameraTimer" />
 
         <variable
             name="flash"
@@ -22,59 +22,46 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@android:color/black"
-        android:fitsSystemWindows="true"
         tools:context=".fragments.CameraFragment">
 
         <TextureView
             android:id="@+id/viewFinder"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:fitsSystemWindows="true"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.0" />
 
-        <androidx.constraintlayout.widget.Placeholder
-            android:id="@+id/placeholder"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_marginEnd="@dimen/double_margin"
-            android:orientation="horizontal"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/fabTakePicture"
-            app:layout_constraintTop_toTopOf="parent" />
 
         <View
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:alpha="0.4"
             android:background="@android:color/black"
-            android:elevation="1dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="@id/placeholder"
+            app:layout_constraintStart_toStartOf="@id/fabTakePicture"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
+        <ImageButton
             android:id="@+id/fabTakePicture"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="@dimen/double_margin"
+            android:background="@android:color/transparent"
+            android:padding="@dimen/double_margin"
             android:src="@drawable/ic_take_picture"
-            app:backgroundTint="@android:color/transparent"
-            app:elevation="1dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:maxImageSize="@dimen/button_size_big" />
+            app:layout_constraintTop_toTopOf="parent" />
 
         <ImageButton
             android:id="@+id/buttonGallery"
             android:layout_width="@dimen/button_size_small"
             android:layout_height="@dimen/button_size_small"
             android:background="@android:color/transparent"
-            android:elevation="1dp"
             android:onClick="@{()-> fragment.openPreview()}"
             android:scaleType="centerCrop"
             android:src="@drawable/ic_no_picture"
@@ -88,7 +75,6 @@
             android:layout_width="@dimen/button_size_small"
             android:layout_height="@dimen/button_size_small"
             android:background="@drawable/bg_button_round"
-            android:elevation="1dp"
             android:onClick="@{() -> fragment.toggleCamera()}"
             android:padding="@dimen/half_margin"
             android:scaleType="centerInside"

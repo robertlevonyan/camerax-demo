@@ -4,6 +4,7 @@
     <dimen name="medium_margin">24dp</dimen>
     <dimen name="double_margin">32dp</dimen>
 
+    <dimen name="button_size_shutter">100dp</dimen>
     <dimen name="button_size_big">56dp</dimen>
     <dimen name="button_size_small">36dp</dimen>
     <dimen name="count_down_text_size">72sp</dimen>

@@ -16,6 +16,7 @@ import androidx.fragment.app.Fragment
 import com.google.android.material.snackbar.Snackbar
 import com.robertlevonyan.demo.camerax.R
 import java.io.File
+import kotlin.properties.Delegates
 
 abstract class BaseFragment<B : ViewDataBinding>(private val fragmentLayout: Int) : Fragment() {
     companion object {
@@ -79,11 +80,12 @@ abstract class BaseFragment<B : ViewDataBinding>(private val fragmentLayout: Int
         }
     }
 
-    private fun allPermissionsGranted() = permissions.all {
+    protected fun allPermissionsGranted() = permissions.all {
         ContextCompat.checkSelfPermission(requireContext(), it) == PackageManager.PERMISSION_GRANTED
     }
 
     abstract fun onPermissionGranted()
 
     abstract fun onBackPressed()
+
 }

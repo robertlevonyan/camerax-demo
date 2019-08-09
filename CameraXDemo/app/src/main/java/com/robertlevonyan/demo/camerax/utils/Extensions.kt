@@ -2,18 +2,23 @@ package com.robertlevonyan.demo.camerax.utils
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
+import android.content.Context
+import android.content.Intent
 import android.content.res.Configuration
-import android.view.View
-import android.view.ViewAnimationUtils
-import android.view.ViewGroup
+import android.net.Uri
+import android.view.*
+import android.view.View.*
 import android.widget.ImageButton
 import androidx.annotation.DrawableRes
 import androidx.core.animation.doOnEnd
 import androidx.core.animation.doOnStart
+import androidx.fragment.app.Fragment
+import androidx.viewpager2.widget.ViewPager2
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.io.File
 
 fun ImageButton.toggleButton(
     flag: Boolean, rotationAngle: Float, @DrawableRes firstIcon: Int, @DrawableRes secondIcon: Int,
@@ -76,3 +81,67 @@ fun ViewGroup.circularClose(button: ImageButton, action: () -> Unit = {}) {
         doOnEnd { this@circularClose.visibility = View.GONE }
     }.start()
 }
+
+fun View.onWindowInsets(action: (View, WindowInsets) -> Unit) {
+    this.requestApplyInsets()
+    this.setOnApplyWindowInsetsListener { v, insets ->
+        action(v, insets)
+        insets
+    }
+}
+
+fun View.fitSystemWindows() {
+    systemUiVisibility =
+        SYSTEM_UI_FLAG_LAYOUT_STABLE or SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+}
+
+fun Fragment.share(file: File, title: String = "Share with...") {
+    val share = Intent(Intent.ACTION_SEND)
+    share.type = "image/*"
+    share.putExtra(Intent.EXTRA_STREAM, Uri.parse(file.absolutePath))
+    startActivity(Intent.createChooser(share, title))
+}
+
+fun ViewPager2.onPageSelected(action: (Int) -> Unit) {
+    registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+        override fun onPageSelected(position: Int) {
+            super.onPageSelected(position)
+            action(position)
+        }
+    })
+}
+
+val Context.layoutInflater: LayoutInflater
+    get() = LayoutInflater.from(this)
+
+var View.topMargin: Int
+    get() = (this.layoutParams as ViewGroup.MarginLayoutParams).topMargin
+    set(value) {
+        val params = this.layoutParams as ViewGroup.MarginLayoutParams
+        params.topMargin = value
+        this.layoutParams = params
+    }
+
+var View.bottomMargin: Int
+    get() = (this.layoutParams as ViewGroup.MarginLayoutParams).bottomMargin
+    set(value) {
+        val params = this.layoutParams as ViewGroup.MarginLayoutParams
+        params.bottomMargin = value
+        this.layoutParams = params
+    }
+
+var View.startMargin: Int
+    get() = (this.layoutParams as ViewGroup.MarginLayoutParams).marginStart
+    set(value) {
+        val params = this.layoutParams as ViewGroup.MarginLayoutParams
+        params.marginStart = value
+        this.layoutParams = params
+    }
+
+var View.endMargin: Int
+    get() = (this.layoutParams as ViewGroup.MarginLayoutParams).marginEnd
+    set(value) {
+        val params = this.layoutParams as ViewGroup.MarginLayoutParams
+        params.marginEnd = value
+        this.layoutParams = params
+    }
