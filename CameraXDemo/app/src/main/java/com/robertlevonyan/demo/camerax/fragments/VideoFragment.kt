@@ -1,37 +1,41 @@
 package com.robertlevonyan.demo.camerax.fragments
 
+import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Configuration
 import android.hardware.display.DisplayManager
 import android.os.Bundle
+import android.util.Log
+import android.util.Rational
 import android.view.GestureDetector
 import android.view.View
-import android.view.ViewGroup
-import androidx.camera.core.CameraX
-import androidx.camera.core.FlashMode
-import androidx.camera.core.ImageCapture
-import androidx.camera.core.Preview
-import androidx.core.view.ViewCompat
+import android.widget.Toast
+import androidx.camera.core.*
+import androidx.core.animation.doOnCancel
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
+import com.bumptech.glide.Glide
+import com.bumptech.glide.request.RequestOptions
 import com.robertlevonyan.demo.camerax.R
 import com.robertlevonyan.demo.camerax.databinding.FragmentVideoBinding
-import com.robertlevonyan.demo.camerax.utils.SharedPrefsManager
-import com.robertlevonyan.demo.camerax.utils.SwipeGestureDetector
-import com.robertlevonyan.demo.camerax.utils.toggleButton
+import com.robertlevonyan.demo.camerax.utils.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import java.io.File
 import kotlin.properties.Delegates
 
+@SuppressLint("RestrictedApi")
 class VideoFragment : BaseFragment<FragmentVideoBinding>(R.layout.fragment_video) {
     companion object {
         private const val TAG = "VideoFragment"
-        const val KEY_FLASH = "sPrefFlashVideo"
         const val KEY_GRID = "sPrefGridVideo"
     }
 
     private lateinit var displayManager: DisplayManager
     private lateinit var prefs: SharedPrefsManager
     private lateinit var preview: Preview
-    private lateinit var imageCapture: ImageCapture
+    private lateinit var videoCapture: VideoCapture
 
     private var displayId = -1
     private var lensFacing = CameraX.LensFacing.BACK
@@ -44,14 +48,24 @@ class VideoFragment : BaseFragment<FragmentVideoBinding>(R.layout.fragment_video
         )
     }
     private var hasGrid = false
+    private var isTorchOn = false
+    private var isRecording = false
+    private val animateRecord by lazy {
+        ObjectAnimator.ofFloat(binding.fabRecordVideo, View.ALPHA, 1f, 0.5f).apply {
+            repeatMode = ObjectAnimator.REVERSE
+            repeatCount = ObjectAnimator.INFINITE
+            doOnCancel { binding.fabRecordVideo.alpha = 1f }
+        }
+    }
 
     private val displayListener = object : DisplayManager.DisplayListener {
         override fun onDisplayAdded(displayId: Int) = Unit
         override fun onDisplayRemoved(displayId: Int) = Unit
+
         override fun onDisplayChanged(displayId: Int) = view?.let { view ->
             if (displayId == this@VideoFragment.displayId) {
                 preview.setTargetRotation(view.display.rotation)
-                imageCapture.setTargetRotation(view.display.rotation)
+                videoCapture.setTargetRotation(view.display.rotation)
             }
         } ?: Unit
     }
@@ -59,7 +73,6 @@ class VideoFragment : BaseFragment<FragmentVideoBinding>(R.layout.fragment_video
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         prefs = SharedPrefsManager.newInstance(requireContext())
-        flashMode = prefs.getInt(KEY_FLASH, FlashMode.OFF.ordinal)
         hasGrid = prefs.getBoolean(KEY_GRID, false)
         initViews()
 
@@ -92,25 +105,17 @@ class VideoFragment : BaseFragment<FragmentVideoBinding>(R.layout.fragment_video
     }
 
     private fun adjustInsets() {
-        if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
-            ViewCompat.requestApplyInsets(binding.fabRecordVideo)
-            ViewCompat.requestApplyInsets(binding.buttonFlash)
-            ViewCompat.setOnApplyWindowInsetsListener(binding.fabRecordVideo) { v, insets ->
-                val params = v.layoutParams as ViewGroup.MarginLayoutParams
-                params.bottomMargin = insets.systemWindowInsetBottom
-                v.layoutParams = params
-                insets.consumeSystemWindowInsets()
-            }
-            ViewCompat.setOnApplyWindowInsetsListener(binding.buttonFlash) { v, insets ->
-                val params = v.layoutParams as ViewGroup.MarginLayoutParams
-                params.topMargin = insets.systemWindowInsetTop
-                v.layoutParams = params
-                insets.consumeSystemWindowInsets()
-            }
+        binding.viewFinder.fitSystemWindows()
+        binding.fabRecordVideo.onWindowInsets { view, windowInsets ->
+            if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT)
+                view.bottomMargin = windowInsets.systemWindowInsetBottom
+            else view.endMargin = windowInsets.systemWindowInsetRight
+        }
+        binding.buttonFlash.onWindowInsets { view, windowInsets ->
+            view.topMargin = windowInsets.systemWindowInsetTop
         }
     }
 
-    @SuppressLint("RestrictedApi")
     fun toggleCamera() = binding.buttonSwitchCamera.toggleButton(
         lensFacing == CameraX.LensFacing.BACK, 180f,
         R.drawable.ic_outline_camera_rear, R.drawable.ic_outline_camera_front
@@ -122,12 +127,73 @@ class VideoFragment : BaseFragment<FragmentVideoBinding>(R.layout.fragment_video
     }
 
     private fun recreateCamera() {
+        CameraX.unbindAll()
+        startCamera()
+    }
 
+    private fun startCamera() {
+        val viewFinder = binding.viewFinder
+
+        val ratio = Rational(16, 9)
+
+        val previewConfig = PreviewConfig.Builder().apply {
+            setTargetAspectRatio(ratio)
+            setLensFacing(lensFacing)
+            setTargetRotation(viewFinder.display.rotation)
+        }.build()
+
+        preview = AutoFitPreviewBuilder.build(previewConfig, viewFinder)
+
+        val videoCaptureConfig = VideoCaptureConfig.Builder().apply {
+            setLensFacing(lensFacing)
+            setTargetAspectRatio(ratio)
+            setVideoFrameRate(24)
+            setTargetRotation(viewFinder.display.rotation)
+        }.build()
+
+        videoCapture = VideoCapture(videoCaptureConfig)
+
+        binding.fabRecordVideo.setOnClickListener { recordVideo(videoCapture) }
+
+        CameraX.bindToLifecycle(viewLifecycleOwner, preview, videoCapture)
     }
 
     fun openPreview() {
         if (!outputDirectory.listFiles().isNullOrEmpty())
             view?.let { Navigation.findNavController(it).navigate(R.id.action_video_to_preview) }
+    }
+
+    private fun recordVideo(videoCapture: VideoCapture) {
+        val videoFile = File(outputDirectory, "${System.currentTimeMillis()}.mp4")
+        if (!isRecording) {
+            animateRecord.start()
+            videoCapture.startRecording(videoFile, object : VideoCapture.OnVideoSavedListener {
+                override fun onVideoSaved(file: File?) {
+                    file?.let { f ->
+                        setGalleryThumbnail(f)
+                        val msg = "Video saved in ${f.absolutePath}"
+                        Log.d("CameraXDemo", msg)
+                    } ?: run {
+                        animateRecord.cancel()
+                        val msg = "Video not saved"
+                        Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
+                        Log.e("CameraXApp", msg)
+                    }
+                }
+
+                override fun onError(useCaseError: VideoCapture.UseCaseError?, message: String?, cause: Throwable?) {
+                    animateRecord.cancel()
+                    val msg = "Video capture failed: $message"
+                    Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
+                    Log.e("CameraXApp", msg)
+                    cause?.printStackTrace()
+                }
+            })
+        } else {
+            animateRecord.cancel()
+            videoCapture.stopRecording()
+        }
+        isRecording = !isRecording
     }
 
     fun toggleGrid() =
@@ -138,18 +204,46 @@ class VideoFragment : BaseFragment<FragmentVideoBinding>(R.layout.fragment_video
         }
 
     fun toggleFlash() {
-
+        binding.buttonFlash.toggleButton(
+            flashMode == FlashMode.ON.ordinal,
+            360f,
+            R.drawable.ic_flash_off,
+            R.drawable.ic_flash_on
+        ) { flag ->
+            isTorchOn = flag
+            flashMode = if (flag) FlashMode.ON.ordinal else FlashMode.OFF.ordinal
+            preview.enableTorch(flag)
+        }
     }
 
     override fun onPermissionGranted() {
-        val viewFinder = binding.viewFinder
+        binding.viewFinder.let { vf ->
+            vf.post {
+                displayId = vf.display.displayId
+                recreateCamera()
+                lifecycleScope.launch(Dispatchers.IO) {
+                    outputDirectory.listFiles()?.firstOrNull()?.let {
+                        setGalleryThumbnail(it)
+                    } ?: binding.buttonGallery.setImageResource(R.drawable.ic_no_picture)
+                }
+                preview.enableTorch(isTorchOn)
+            }
+        }
+    }
 
-        viewFinder.post {
-            displayId = binding.viewFinder.display.displayId
-            recreateCamera()
+    private fun setGalleryThumbnail(file: File) = binding.buttonGallery.let {
+        it.post {
+            Glide.with(requireContext())
+                .load(file)
+                .apply(RequestOptions.circleCropTransform())
+                .into(it)
         }
     }
 
     override fun onBackPressed() = requireActivity().finish()
 
+    override fun onStop() {
+        super.onStop()
+        preview.enableTorch(false)
+    }
 }

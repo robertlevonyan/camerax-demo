@@ -177,11 +177,16 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
     }
 
     override fun onPermissionGranted() {
-        val viewFinder = binding.viewFinder
-
-        viewFinder.post {
-            displayId = binding.viewFinder.display.displayId
-            recreateCamera()
+        binding.viewFinder.let { vf ->
+            vf.post {
+                displayId = vf.display.displayId
+                recreateCamera()
+                lifecycleScope.launch(Dispatchers.IO) {
+                    outputDirectory.listFiles()?.firstOrNull()?.let {
+                        setGalleryThumbnail(it)
+                    } ?: binding.buttonGallery.setImageResource(R.drawable.ic_no_picture)
+                }
+            }
         }
     }
 
@@ -189,7 +194,7 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
         val viewFinder = binding.viewFinder
 
         val metrics = DisplayMetrics().also { viewFinder.display.getRealMetrics(it) }
-        val ratio = Rational(metrics.heightPixels, metrics.widthPixels)
+        val ratio = Rational(metrics.widthPixels, metrics.heightPixels)
 
         val previewConfig = PreviewConfig.Builder().apply {
             setTargetAspectRatio(ratio)
@@ -212,12 +217,6 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
         binding.fabTakePicture.setOnClickListener { takePicture(imageCapture) }
 
         CameraX.bindToLifecycle(viewLifecycleOwner, preview, imageCapture)
-
-        lifecycleScope.launch(Dispatchers.IO) {
-            outputDirectory.listFiles()?.firstOrNull()?.let {
-                setGalleryThumbnail(it)
-            } ?: binding.buttonGallery.setImageResource(R.drawable.ic_no_picture)
-        }
     }
 
     private fun getFlashMode() = when (flashMode) {
@@ -260,13 +259,12 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
         })
     }
 
-    private fun setGalleryThumbnail(file: File) {
-        val buttonGallery = binding.buttonGallery
-        buttonGallery.post {
+    private fun setGalleryThumbnail(file: File) = binding.buttonGallery.let {
+        it.post {
             Glide.with(requireContext())
                 .load(file)
                 .apply(RequestOptions.circleCropTransform())
-                .into(buttonGallery)
+                .into(it)
         }
     }
 

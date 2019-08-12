@@ -28,6 +28,7 @@ abstract class BaseFragment<B : ViewDataBinding>(private val fragmentLayout: Int
 
     private val permissions = arrayOf(
         Manifest.permission.CAMERA,
+        Manifest.permission.RECORD_AUDIO,
         Manifest.permission.READ_EXTERNAL_STORAGE,
         Manifest.permission.WRITE_EXTERNAL_STORAGE
     )

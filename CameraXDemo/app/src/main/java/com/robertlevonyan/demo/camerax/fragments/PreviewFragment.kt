@@ -1,5 +1,6 @@
 package com.robertlevonyan.demo.camerax.fragments
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.navigation.Navigation
@@ -19,9 +20,14 @@ class PreviewFragment : BaseFragment<FragmentPreviewBinding>(R.layout.fragment_p
 
         if (allPermissionsGranted()) {
             outputDirectory.listFiles()?.let {
-                picturesAdapter = PicturesAdapter(it.toMutableList()) {
-                    binding.groupPreviewActions.visibility =
-                        if (binding.groupPreviewActions.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+                picturesAdapter = PicturesAdapter(it.toMutableList()) { isVideo, uri ->
+                    if (!isVideo) {
+                        binding.groupPreviewActions.visibility =
+                            if (binding.groupPreviewActions.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+                    } else {
+                        val play = Intent(Intent.ACTION_VIEW, uri).apply { setDataAndType(uri, "video/mp4") }
+                        startActivity(play)
+                    }
                 }
                 binding.pagerPhotos.apply {
                     adapter = picturesAdapter

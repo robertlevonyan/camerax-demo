@@ -1,5 +1,6 @@
 package com.robertlevonyan.demo.camerax.adapter
 
+import android.net.Uri
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
@@ -9,34 +10,41 @@ import com.robertlevonyan.demo.camerax.R
 import com.robertlevonyan.demo.camerax.utils.layoutInflater
 import java.io.File
 
-class PicturesAdapter(private val pictures: MutableList<File>, private val click: () -> Unit) :
+class PicturesAdapter(private val files: MutableList<File>, private val click: (Boolean, Uri) -> Unit) :
     RecyclerView.Adapter<PicturesAdapter.PicturesViewHolder>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
         PicturesViewHolder(parent.context.layoutInflater.inflate(R.layout.item_picture, parent, false))
 
-    override fun getItemCount() = pictures.size
+    override fun getItemCount() = files.size
 
     override fun onBindViewHolder(holder: PicturesViewHolder, position: Int) {
-        val picture = pictures[position]
+        val file = files[position]
+//        holder.imagePlay.setOnClickListener {
+//            val play = Intent(Intent.ACTION_VIEW, Uri.parse(file.absolutePath))
+//            play.setDataAndType(Uri.parse(file.absolutePath), "video/mp4")
+//            it.context.startActivity(play)
+//        }
+        val isVideo = file.extension == "mp4"
+        holder.imagePlay.visibility = if (isVideo) View.VISIBLE else View.GONE
         holder.imagePreview.let {
             Glide.with(it)
-                .load(picture)
+                .load(file)
                 .into(it)
-            it.setOnClickListener { click() }
+            it.setOnClickListener { click(isVideo, Uri.parse(file.absolutePath)) }
         }
     }
 
     fun shareImage(currentPage: Int, action: (File) -> Unit) {
-        if (currentPage < pictures.size) {
-            action(pictures[currentPage])
+        if (currentPage < files.size) {
+            action(files[currentPage])
         }
     }
 
     fun deleteImage(currentPage: Int, action: () -> Unit) {
-        if (currentPage < pictures.size) {
-            val picture = pictures[currentPage]
+        if (currentPage < files.size) {
+            val picture = files[currentPage]
             if (picture.exists() && picture.delete()) {
-                pictures.removeAt(currentPage)
+                files.removeAt(currentPage)
                 notifyItemRemoved(currentPage)
                 action()
             }
@@ -45,5 +53,6 @@ class PicturesAdapter(private val pictures: MutableList<File>, private val click
 
     class PicturesViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val imagePreview: ImageView = itemView.findViewById(R.id.imagePreview)
+        val imagePlay: ImageView = itemView.findViewById(R.id.imagePlay)
     }
 }
