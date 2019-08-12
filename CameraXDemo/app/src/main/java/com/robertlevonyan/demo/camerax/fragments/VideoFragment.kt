@@ -28,7 +28,7 @@ import kotlin.properties.Delegates
 @SuppressLint("RestrictedApi")
 class VideoFragment : BaseFragment<FragmentVideoBinding>(R.layout.fragment_video) {
     companion object {
-        private const val TAG = "VideoFragment"
+        private const val TAG = "CameraXDemo"
         const val KEY_GRID = "sPrefGridVideo"
     }
 

@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.res.Configuration
 import android.hardware.display.DisplayManager
 import android.os.Bundle
+import android.os.Handler
+import android.os.HandlerThread
 import android.util.DisplayMetrics
 import android.util.Log
 import android.util.Rational
@@ -17,6 +19,7 @@ import androidx.navigation.Navigation
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.RequestOptions
 import com.robertlevonyan.demo.camerax.R
+import com.robertlevonyan.demo.camerax.analyzer.LuminosityAnalyzer
 import com.robertlevonyan.demo.camerax.databinding.FragmentCameraBinding
 import com.robertlevonyan.demo.camerax.enums.CameraTimer
 import com.robertlevonyan.demo.camerax.utils.*
@@ -28,7 +31,7 @@ import kotlin.properties.Delegates
 
 class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_camera) {
     companion object {
-        private const val TAG = "CameraFragment"
+        private const val TAG = "CameraXDemo"
         const val KEY_FLASH = "sPrefFlashCamera"
         const val KEY_GRID = "sPrefGridCamera"
     }
@@ -214,9 +217,22 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
 
         imageCapture = ImageCapture(imageCaptureConfig)
 
+        val analyzerConfig = ImageAnalysisConfig.Builder().apply {
+            // Use a worker thread for image analysis to prevent glitches
+            val analyzerThread = HandlerThread("LuminosityAnalysis").apply { start() }
+            setCallbackHandler(Handler(analyzerThread.looper))
+            // In our analysis, we care more about the latest image than
+            // analyzing *every* image
+            setImageReaderMode(ImageAnalysis.ImageReaderMode.ACQUIRE_LATEST_IMAGE)
+        }.build()
+
+        val analyzerUseCase = ImageAnalysis(analyzerConfig).apply {
+            analyzer = LuminosityAnalyzer()
+        }
+
         binding.fabTakePicture.setOnClickListener { takePicture(imageCapture) }
 
-        CameraX.bindToLifecycle(viewLifecycleOwner, preview, imageCapture)
+        CameraX.bindToLifecycle(viewLifecycleOwner, preview, imageCapture, analyzerUseCase)
     }
 
     private fun getFlashMode() = when (flashMode) {
