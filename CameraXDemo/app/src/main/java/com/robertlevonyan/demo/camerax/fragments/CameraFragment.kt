@@ -232,7 +232,11 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
 
         binding.fabTakePicture.setOnClickListener { takePicture(imageCapture) }
 
-        CameraX.bindToLifecycle(viewLifecycleOwner, preview, imageCapture, analyzerUseCase)
+        if (lensFacing == CameraX.LensFacing.BACK) {
+            CameraX.bindToLifecycle(viewLifecycleOwner, preview, imageCapture, analyzerUseCase)
+        } else {
+            CameraX.bindToLifecycle(viewLifecycleOwner, preview, imageCapture)
+        }
     }
 
     private fun getFlashMode() = when (flashMode) {
