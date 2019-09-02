@@ -106,11 +106,9 @@
             android:padding="@dimen/half_margin"
             android:scaleType="centerInside"
             android:src="@drawable/ic_timer_off"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="@id/buttonFlash"
-            app:layout_constraintStart_toStartOf="@id/buttonFlash"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.2" />
+            app:layout_constraintBottom_toTopOf="@+id/buttonGrid"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <ImageButton
             android:id="@+id/buttonGrid"
@@ -122,11 +120,9 @@
             android:padding="@dimen/half_margin"
             android:scaleType="centerInside"
             android:src="@drawable/ic_grid_off"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="@id/buttonFlash"
-            app:layout_constraintStart_toStartOf="@id/buttonFlash"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.5" />
+            app:layout_constraintBottom_toTopOf="@+id/buttonFlash"
+            app:layout_constraintStart_toStartOf="@id/buttonTimer"
+            app:layout_constraintTop_toBottomOf="@+id/buttonTimer" />
 
         <ImageButton
             android:id="@+id/buttonFlash"
@@ -138,10 +134,23 @@
             android:padding="@dimen/half_margin"
             android:scaleType="centerInside"
             android:src="@drawable/ic_flash_off"
+            app:layout_constraintBottom_toTopOf="@+id/buttonHdr"
+            app:layout_constraintStart_toStartOf="@id/buttonGrid"
+            app:layout_constraintTop_toBottomOf="@+id/buttonGrid" />
+
+        <ImageButton
+            android:id="@+id/buttonHdr"
+            android:layout_width="@dimen/button_size_small"
+            android:layout_height="@dimen/button_size_small"
+            android:background="@android:color/transparent"
+            android:elevation="1dp"
+            android:onClick="@{() -> fragment.toggleHdr()}"
+            android:padding="@dimen/half_margin"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_hdr_off"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.8" />
+            app:layout_constraintStart_toStartOf="@id/buttonFlash"
+            app:layout_constraintTop_toBottomOf="@+id/buttonFlash" />
 
         <View
             android:id="@+id/gridVertical1"

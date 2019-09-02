@@ -14,6 +14,7 @@ import android.view.GestureDetector
 import android.view.View
 import android.widget.Toast
 import androidx.camera.core.*
+import androidx.camera.extensions.HdrImageCaptureExtender
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
 import com.bumptech.glide.Glide
@@ -34,6 +35,7 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
         private const val TAG = "CameraXDemo"
         const val KEY_FLASH = "sPrefFlashCamera"
         const val KEY_GRID = "sPrefGridCamera"
+        const val KEY_HDR = "sPrefHDR"
     }
 
     private lateinit var displayManager: DisplayManager
@@ -41,19 +43,21 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
     private lateinit var preview: Preview
     private lateinit var imageCapture: ImageCapture
     private lateinit var imageAnalyzer: ImageAnalysis
+//    private lateinit var hdrImaCapture: HdrImageCaptureExtender
 
     private var displayId = -1
     private var lensFacing = CameraX.LensFacing.BACK
     private var flashMode by Delegates.observable(FlashMode.OFF.ordinal) { _, _, new ->
         binding.buttonFlash.setImageResource(
-            when (new) {
-                FlashMode.ON.ordinal -> R.drawable.ic_flash_on
-                FlashMode.AUTO.ordinal -> R.drawable.ic_flash_auto
-                else -> R.drawable.ic_flash_off
-            }
+                when (new) {
+                    FlashMode.ON.ordinal -> R.drawable.ic_flash_on
+                    FlashMode.AUTO.ordinal -> R.drawable.ic_flash_auto
+                    else -> R.drawable.ic_flash_off
+                }
         )
     }
     private var hasGrid = false
+    private var hasHdr = false
     private var selectedTimer = CameraTimer.OFF
 
     private val displayListener = object : DisplayManager.DisplayListener {
@@ -74,6 +78,7 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
         prefs = SharedPrefsManager.newInstance(requireContext())
         flashMode = prefs.getInt(KEY_FLASH, FlashMode.OFF.ordinal)
         hasGrid = prefs.getBoolean(KEY_GRID, false)
+        hasHdr = prefs.getBoolean(KEY_HDR, false)
         initViews()
 
         displayManager = requireContext().getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
@@ -82,7 +87,7 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
         binding.fragment = this
         binding.viewFinder.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
             override fun onViewDetachedFromWindow(v: View) =
-                displayManager.registerDisplayListener(displayListener, null)
+                    displayManager.registerDisplayListener(displayListener, null)
 
             override fun onViewAttachedToWindow(v: View) = displayManager.unregisterDisplayListener(displayListener)
         })
@@ -110,15 +115,15 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
                 view.bottomMargin = windowInsets.systemWindowInsetBottom
             else view.endMargin = windowInsets.systemWindowInsetRight
         }
-        binding.buttonFlash.onWindowInsets { view, windowInsets ->
+        binding.buttonTimer.onWindowInsets { view, windowInsets ->
             view.topMargin = windowInsets.systemWindowInsetTop
         }
     }
 
     @SuppressLint("RestrictedApi")
     fun toggleCamera() = binding.buttonSwitchCamera.toggleButton(
-        lensFacing == CameraX.LensFacing.BACK, 180f,
-        R.drawable.ic_outline_camera_rear, R.drawable.ic_outline_camera_front
+            lensFacing == CameraX.LensFacing.BACK, 180f,
+            R.drawable.ic_outline_camera_rear, R.drawable.ic_outline_camera_front
     ) {
         lensFacing = if (it) CameraX.LensFacing.BACK else CameraX.LensFacing.FRONT
 
@@ -139,43 +144,51 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
     fun selectTimer() = binding.layoutTimerOptions.circularReveal(binding.buttonTimer)
 
     fun closeTimerAndSelect(timer: CameraTimer) =
-        binding.layoutTimerOptions.circularClose(binding.buttonTimer) {
-            binding.buttonTimer.setImageResource(
-                when (timer) {
-                    CameraTimer.S3 -> {
-                        selectedTimer = CameraTimer.S3
-                        R.drawable.ic_timer_3
-                    }
-                    CameraTimer.S10 -> {
-                        selectedTimer = CameraTimer.S10
-                        R.drawable.ic_timer_10
-                    }
-                    else -> {
-                        selectedTimer = CameraTimer.OFF
-                        R.drawable.ic_timer_off
-                    }
-                }
-            )
-        }
+            binding.layoutTimerOptions.circularClose(binding.buttonTimer) {
+                binding.buttonTimer.setImageResource(
+                        when (timer) {
+                            CameraTimer.S3 -> {
+                                selectedTimer = CameraTimer.S3
+                                R.drawable.ic_timer_3
+                            }
+                            CameraTimer.S10 -> {
+                                selectedTimer = CameraTimer.S10
+                                R.drawable.ic_timer_10
+                            }
+                            else -> {
+                                selectedTimer = CameraTimer.OFF
+                                R.drawable.ic_timer_off
+                            }
+                        }
+                )
+            }
 
     fun selectFlash() = binding.layoutFlashOptions.circularReveal(binding.buttonFlash)
 
     fun closeFlashAndSelect(flash: FlashMode) =
-        binding.layoutFlashOptions.circularClose(binding.buttonFlash) {
-            flashMode = when (flash) {
-                FlashMode.ON -> FlashMode.ON.ordinal
-                FlashMode.AUTO -> FlashMode.AUTO.ordinal
-                else -> FlashMode.OFF.ordinal
+            binding.layoutFlashOptions.circularClose(binding.buttonFlash) {
+                flashMode = when (flash) {
+                    FlashMode.ON -> FlashMode.ON.ordinal
+                    FlashMode.AUTO -> FlashMode.AUTO.ordinal
+                    else -> FlashMode.OFF.ordinal
+                }
+                prefs.putInt(KEY_FLASH, flashMode)
+                imageCapture.flashMode = getFlashMode()
             }
-            prefs.putInt(KEY_FLASH, flashMode)
-            imageCapture.flashMode = getFlashMode()
-        }
 
     fun toggleGrid() {
         binding.buttonGrid.toggleButton(hasGrid, 180f, R.drawable.ic_grid_off, R.drawable.ic_grid_on) { flag ->
             hasGrid = flag
             prefs.putBoolean(KEY_GRID, flag)
             binding.groupGridLines.visibility = if (flag) View.VISIBLE else View.GONE
+        }
+    }
+
+    fun toggleHdr() {
+        binding.buttonHdr.toggleButton(hasHdr, 360f, R.drawable.ic_hdr_off, R.drawable.ic_hdr_on) { flag ->
+            hasHdr = flag
+            prefs.putBoolean(KEY_HDR, flag)
+            recreateCamera()
         }
     }
 
@@ -213,9 +226,15 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
             setCaptureMode(ImageCapture.CaptureMode.MAX_QUALITY)
             setTargetRotation(viewFinder.display.rotation)
             setFlashMode(getFlashMode())
-        }.build()
+        }
 
-        imageCapture = ImageCapture(imageCaptureConfig)
+        imageCapture = ImageCapture(imageCaptureConfig.build())
+        val hdrImageCapture = HdrImageCaptureExtender.create(imageCaptureConfig)
+        if (!hdrImageCapture.isExtensionAvailable) {
+            binding.buttonHdr.visibility = View.GONE
+        } else if (hasHdr) {
+            hdrImageCapture.enableExtension()
+        }
 
         val analyzerConfig = ImageAnalysisConfig.Builder().apply {
             // Use a worker thread for image analysis to prevent glitches
@@ -282,9 +301,9 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
     private fun setGalleryThumbnail(file: File) = binding.buttonGallery.let {
         it.post {
             Glide.with(requireContext())
-                .load(file)
-                .apply(RequestOptions.circleCropTransform())
-                .into(it)
+                    .load(file)
+                    .apply(RequestOptions.circleCropTransform())
+                    .into(it)
         }
     }
 

@@ -35,6 +35,7 @@ dependencies {
     implementation "androidx.constraintlayout:constraintlayout:$constraintlayout_version"
     implementation "androidx.camera:camera-core:$camerax_version"
     implementation "androidx.camera:camera-camera2:$camerax_version"
+    implementation "androidx.camera:camera-extensions:$camerax_ext_version"
     implementation "androidx.navigation:navigation-fragment:$navigation_version"
     implementation "androidx.navigation:navigation-ui:$navigation_version"
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:$lifecycle_version"
