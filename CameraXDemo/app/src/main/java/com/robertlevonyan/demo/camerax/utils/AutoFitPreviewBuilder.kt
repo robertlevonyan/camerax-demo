@@ -12,6 +12,10 @@ import java.lang.ref.WeakReference
 import java.util.*
 import kotlin.math.roundToInt
 
+/**
+ * Builder for [Preview] that takes in a [WeakReference] of the view finder and [PreviewConfig],
+ * then instantiates a [Preview] which automatically resizes and rotates reacting to config changes.
+ */
 class AutoFitPreviewBuilder private constructor(config: PreviewConfig, viewFinderRef: WeakReference<TextureView>) {
     val previewUseCase: Preview
     private var bufferRotation = 0
@@ -21,26 +25,34 @@ class AutoFitPreviewBuilder private constructor(config: PreviewConfig, viewFinde
     private var viewFinderDisplay = -1
 
     init {
-        val viewFinder = viewFinderRef.get() ?: throw IllegalArgumentException("Invalid reference to view finder used")
+        // Make sure that the view finder reference is valid
+        val viewFinder = viewFinderRef.get()
+                ?: throw IllegalArgumentException("Invalid reference to view finder used")
 
+        // Initialize the display and rotation from texture view information
         viewFinderDisplay = viewFinder.display.displayId
         viewFinderRotation = getDisplaySurfaceRotation(viewFinder.display)
 
+        // Initialize public use-case with the given config
         previewUseCase = Preview(config)
 
+        // Every time the view finder is updated, recompute layout
         previewUseCase.setOnPreviewOutputUpdateListener { output ->
             val vFinder = viewFinderRef.get() ?: return@setOnPreviewOutputUpdateListener
 
+            // To update the SurfaceTexture, we have to remove it and re-add it
             val parent = viewFinder.parent as ViewGroup
             parent.removeView(viewFinder)
             parent.addView(viewFinder, 0)
 
+            // Update internal texture
             viewFinder.surfaceTexture = output.surfaceTexture
             bufferRotation = output.rotationDegrees
             val rotation = getDisplaySurfaceRotation(viewFinder.display)
             updateTransform(vFinder, rotation, output.textureSize, viewFinderDimens)
         }
 
+        // Every time the provided texture view changes, recompute layout
         viewFinder.addOnLayoutChangeListener { view, left, top, right, bottom, _, _, _, _ ->
             val vFinder = view as TextureView
             val newViewFinderDimens = Size(right - left, bottom - top)
@@ -49,10 +61,11 @@ class AutoFitPreviewBuilder private constructor(config: PreviewConfig, viewFinde
         }
     }
 
+    /** Helper function that fits a camera preview into the given [TextureView] */
     private fun updateTransform(vFinder: TextureView, rotation: Int, newBufferDimens: Size, newViewFinderDimens: Size) {
         if (rotation == viewFinderRotation &&
-            Objects.equals(newBufferDimens, bufferDimens) &&
-            Objects.equals(newViewFinderDimens, viewFinderDimens)
+                Objects.equals(newBufferDimens, bufferDimens) &&
+                Objects.equals(newViewFinderDimens, viewFinderDimens)
         ) return
 
         viewFinderRotation = rotation
@@ -65,6 +78,7 @@ class AutoFitPreviewBuilder private constructor(config: PreviewConfig, viewFinde
 
         val matrix = Matrix()
 
+        // Compute the center of the view finder
         val centerX = viewFinderDimens.width / 2f
         val centerY = viewFinderDimens.height / 2f
 
@@ -91,6 +105,7 @@ class AutoFitPreviewBuilder private constructor(config: PreviewConfig, viewFinde
     }
 
     companion object {
+        /** Helper function that gets the rotation of a [Display] in degrees */
         fun getDisplaySurfaceRotation(display: Display?) = when (display?.rotation) {
             Surface.ROTATION_90 -> 90
             Surface.ROTATION_180 -> 180
@@ -98,8 +113,12 @@ class AutoFitPreviewBuilder private constructor(config: PreviewConfig, viewFinde
             else -> 0
         }
 
+        /**
+         * Returns an instance of [Preview] which automatically adjusts in size and rotation to
+         * compensate for config changes.
+         */
         fun build(config: PreviewConfig, viewFinder: TextureView) =
-            AutoFitPreviewBuilder(config, WeakReference(viewFinder)).previewUseCase
+                AutoFitPreviewBuilder(config, WeakReference(viewFinder)).previewUseCase
     }
 
 }

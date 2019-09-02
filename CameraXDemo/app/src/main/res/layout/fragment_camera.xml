@@ -16,6 +16,10 @@
         <variable
             name="flash"
             type="androidx.camera.core.FlashMode" />
+
+        <variable
+            name="imageCapture"
+            type="androidx.camera.core.ImageCapture" />
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -48,11 +52,13 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@android:color/transparent"
+            android:onClick="@{() -> fragment.takePicture(imageCapture)}"
             android:padding="@dimen/double_margin"
             android:src="@drawable/ic_take_picture"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
+            app:layout_constraintStart_toStartOf="parent"
+            tools:ignore="ContentDescription" />
 
         <ImageButton
             android:id="@+id/buttonGallery"
@@ -65,7 +71,8 @@
             app:layout_constraintBottom_toBottomOf="@id/fabTakePicture"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@id/fabTakePicture"
-            app:layout_constraintTop_toTopOf="@id/fabTakePicture" />
+            app:layout_constraintTop_toTopOf="@id/fabTakePicture"
+            tools:ignore="ContentDescription" />
 
         <ImageButton
             android:id="@+id/buttonSwitchCamera"
@@ -79,7 +86,8 @@
             app:layout_constraintBottom_toBottomOf="@id/fabTakePicture"
             app:layout_constraintEnd_toStartOf="@id/fabTakePicture"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@id/fabTakePicture" />
+            app:layout_constraintTop_toTopOf="@id/fabTakePicture"
+            tools:ignore="ContentDescription" />
 
         <View
             android:id="@+id/viewBg2"
@@ -106,7 +114,8 @@
             app:layout_constraintEnd_toStartOf="@+id/buttonGrid"
             app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            tools:ignore="ContentDescription" />
 
         <ImageButton
             android:id="@+id/buttonGrid"
@@ -121,7 +130,8 @@
             app:layout_constraintEnd_toStartOf="@+id/buttonFlash"
             app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toEndOf="@+id/buttonTimer"
-            app:layout_constraintTop_toTopOf="@id/buttonTimer" />
+            app:layout_constraintTop_toTopOf="@id/buttonTimer"
+            tools:ignore="ContentDescription" />
 
         <ImageButton
             android:id="@+id/buttonFlash"
@@ -136,7 +146,8 @@
             app:layout_constraintEnd_toStartOf="@+id/buttonHdr"
             app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toEndOf="@+id/buttonGrid"
-            app:layout_constraintTop_toTopOf="@id/buttonGrid" />
+            app:layout_constraintTop_toTopOf="@id/buttonGrid"
+            tools:ignore="ContentDescription" />
 
         <ImageButton
             android:id="@+id/buttonHdr"
@@ -151,7 +162,8 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toEndOf="@+id/buttonFlash"
-            app:layout_constraintTop_toTopOf="@id/buttonFlash" />
+            app:layout_constraintTop_toTopOf="@id/buttonFlash"
+            tools:ignore="ContentDescription" />
 
         <View
             android:id="@+id/gridVertical1"
@@ -235,7 +247,8 @@
                 android:layout_weight="1"
                 android:background="@android:color/transparent"
                 android:onClick="@{() -> fragment.closeTimerAndSelect(timer.OFF)}"
-                android:src="@drawable/ic_timer_off" />
+                android:src="@drawable/ic_timer_off"
+                tools:ignore="ContentDescription" />
 
             <ImageButton
                 android:id="@+id/buttonTimer3"
@@ -244,7 +257,8 @@
                 android:layout_weight="1"
                 android:background="@android:color/transparent"
                 android:onClick="@{() -> fragment.closeTimerAndSelect(timer.S3)}"
-                android:src="@drawable/ic_timer_3" />
+                android:src="@drawable/ic_timer_3"
+                tools:ignore="ContentDescription" />
 
             <ImageButton
                 android:id="@+id/buttonTimer10"
@@ -253,7 +267,8 @@
                 android:layout_weight="1"
                 android:background="@android:color/transparent"
                 android:onClick="@{() -> fragment.closeTimerAndSelect(timer.S10)}"
-                android:src="@drawable/ic_timer_10" />
+                android:src="@drawable/ic_timer_10"
+                tools:ignore="ContentDescription" />
 
         </LinearLayout>
 
@@ -280,7 +295,8 @@
                 android:layout_weight="1"
                 android:background="@android:color/transparent"
                 android:onClick="@{()->fragment.closeFlashAndSelect(flash.OFF)}"
-                android:src="@drawable/ic_flash_off" />
+                android:src="@drawable/ic_flash_off"
+                tools:ignore="ContentDescription" />
 
             <ImageButton
                 android:id="@+id/buttonFlashAuto"
@@ -289,7 +305,8 @@
                 android:layout_weight="1"
                 android:background="@android:color/transparent"
                 android:onClick="@{()->fragment.closeFlashAndSelect(flash.AUTO)}"
-                android:src="@drawable/ic_flash_auto" />
+                android:src="@drawable/ic_flash_auto"
+                tools:ignore="ContentDescription"/>
 
             <ImageButton
                 android:id="@+id/buttonFlashOn"
@@ -298,7 +315,8 @@
                 android:layout_weight="1"
                 android:background="@android:color/transparent"
                 android:onClick="@{()->fragment.closeFlashAndSelect(flash.ON)}"
-                android:src="@drawable/ic_flash_on" />
+                android:src="@drawable/ic_flash_on"
+                tools:ignore="ContentDescription"/>
 
         </LinearLayout>
 

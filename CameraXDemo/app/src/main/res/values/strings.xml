@@ -6,4 +6,8 @@
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="cd_take_picture">Take picture</string>
+    <string name="cb_open_gallery">Navigate to Gallery</string>
+    <string name="cb_switch">Switch between front and back cameras</string>
+    <string name="cb_timer">Select a timer</string>
 </resources>

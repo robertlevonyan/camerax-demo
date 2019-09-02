@@ -10,6 +10,9 @@ import com.robertlevonyan.demo.camerax.R
 import com.robertlevonyan.demo.camerax.utils.layoutInflater
 import java.io.File
 
+/**
+ * This is and adapter to preview taken photos or videos
+ * */
 class PicturesAdapter(private val files: MutableList<File>, private val click: (Boolean, Uri) -> Unit) :
     RecyclerView.Adapter<PicturesAdapter.PicturesViewHolder>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
@@ -19,11 +22,6 @@ class PicturesAdapter(private val files: MutableList<File>, private val click: (
 
     override fun onBindViewHolder(holder: PicturesViewHolder, position: Int) {
         val file = files[position]
-//        holder.imagePlay.setOnClickListener {
-//            val play = Intent(Intent.ACTION_VIEW, Uri.parse(file.absolutePath))
-//            play.setDataAndType(Uri.parse(file.absolutePath), "video/mp4")
-//            it.context.startActivity(play)
-//        }
         val isVideo = file.extension == "mp4"
         holder.imagePlay.visibility = if (isVideo) View.VISIBLE else View.GONE
         holder.imagePreview.let {

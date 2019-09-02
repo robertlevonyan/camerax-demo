@@ -15,9 +15,10 @@ class PreviewFragment : BaseFragment<FragmentPreviewBinding>(R.layout.fragment_p
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        binding.fragment = this
+        binding.fragment = this // setting the variable for XML
         adjustInsets()
 
+        // Check for the permissions and show files
         if (allPermissionsGranted()) {
             outputDirectory.listFiles()?.let {
                 picturesAdapter = PicturesAdapter(it.toMutableList()) { isVideo, uri ->
@@ -37,6 +38,9 @@ class PreviewFragment : BaseFragment<FragmentPreviewBinding>(R.layout.fragment_p
         }
     }
 
+    /**
+     * This methods adds all necessary margins to some views based on window insets and screen orientation
+     * */
     private fun adjustInsets() {
         binding.layoutRoot.fitSystemWindows()
         binding.imageBack.onWindowInsets { view, windowInsets ->
@@ -46,8 +50,6 @@ class PreviewFragment : BaseFragment<FragmentPreviewBinding>(R.layout.fragment_p
             view.bottomMargin = windowInsets.systemWindowInsetBottom
         }
     }
-
-    override fun onPermissionGranted() = Unit
 
     fun shareImage() {
         if (!::picturesAdapter.isInitialized) return
