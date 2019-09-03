@@ -7,5 +7,5 @@
 
 ### UI Structure and features 
 
-| <p>1. Take photo </p><p> 2. Switch camera </p> 3. Open gallery <br /> 4. Select timer <br /> 5. Toggle grid <br /> 6. Select flashlight mode <br /> 7. Toggle HDR (if device supports)|<img src="https://github.com/robertlevonyan/CameraXDemo/blob/master/media/c1.jpg"  width="300" />| 
+| <p align="end">1. Take photo </p><p align="end"> 2. Switch camera </p><p align="end"> 3. Open gallery </p><p align="end"> 4. Select timer </p><p align="end"> 5. Toggle grid </p><p align="end"> 6. Select flashlight mode </p><p align="end"> 7. Toggle HDR (if device supports)</p>|<img src="https://github.com/robertlevonyan/CameraXDemo/blob/master/media/c1.jpg"  width="300" />| 
 |------------------------------------------------------------------------|-----------------------------------------------------------|
