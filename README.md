@@ -7,4 +7,4 @@
 
 ### UI Structure and features 
 
-<img src="https://github.com/robertlevonyan/CameraXDemo/blob/master/media/camerax.png"  width="350" />
+<img src="https://github.com/robertlevonyan/CameraXDemo/blob/master/media/c1.jpg"  width="350" />
