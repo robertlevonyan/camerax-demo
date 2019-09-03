@@ -9,7 +9,7 @@
 
 | <p align="start">1. Take photo </p><p align="start"> 2. Switch camera </p><p align="start"> 3. Open gallery </p><p align="start"> 4. Select timer </p><p align="start"> 5. Toggle grid </p><p align="start"> 6. Select flashlight mode </p><p align="start"> 7. Toggle HDR (if device supports)</p>|<img src="https://github.com/robertlevonyan/CameraXDemo/blob/master/media/c1.jpg" width="250" />|<img src="https://github.com/robertlevonyan/CameraXDemo/blob/master/media/c6.jpg" width="250" />|
 |-----------------------------------|---------------------------------------------|---------------------------------------------------|
-| ### Some Screenshots |||
+||<h2>Some Screenshots</h2>||
 |<img src="https://github.com/robertlevonyan/CameraXDemo/blob/master/media/c2.jpg" width="250" />|<img src="https://github.com/robertlevonyan/CameraXDemo/blob/master/media/c3.jpg" width="250" /> |<img src="https://github.com/robertlevonyan/CameraXDemo/blob/master/media/c4.jpg" width="250" />
 
 
