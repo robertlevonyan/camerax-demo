@@ -4,3 +4,7 @@
 |----------------------------------------------------------------------------------------------|-----------|
 
 [![API](https://img.shields.io/badge/API-14%2B-yellow.svg?style=flat-square)](https://android-arsenal.com/api?level=21)
+
+### UI Structure and features 
+
+<img src="https://github.com/robertlevonyan/CameraXDemo/blob/master/media/camerax.png"  width="350" />
