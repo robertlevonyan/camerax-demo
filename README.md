@@ -7,25 +7,7 @@
 
 ### UI Structure and features 
 
-  <tbody>
-    <tr> 
-      <td colspan="2">
-        <p align="start">1. Take photo </p><p align="start"> 2. Switch camera </p><p align="start"> 3. Open gallery </p><p align="start"> 4. Select timer </p><p align="start"> 5. Toggle grid </p><p align="start"> 6. Select flashlight mode </p><p align="start"> 7. Toggle HDR (if device supports)</p>
-      </td>
-      <td>
-        <img src="https://github.com/robertlevonyan/CameraXDemo/blob/master/media/c1.jpg" width="250" />
-      </td>
-    </tr>
-    <tr> 
-      <td colspan="3">
-        <p align="center">Some Screenshots</p>
-      </td>
-    </tr>
-    <tr>
-      <td><img src="https://github.com/robertlevonyan/CameraXDemo/blob/master/media/c2.jpg" width="150" /></td>
-      <td><img src="https://github.com/robertlevonyan/CameraXDemo/blob/master/media/c3.jpg" width="150" /></td>
-      <td><img src="https://github.com/robertlevonyan/CameraXDemo/blob/master/media/c4.jpg" width="150" /></td>
-    </tr>
-  </tbody>
-</table>
-
+| <p align="start">1. Take photo </p><p align="start"> 2. Switch camera </p><p align="start"> 3. Open gallery </p><p align="start"> 4. Select timer </p><p align="start"> 5. Toggle grid </p><p align="start"> 6. Select flashlight mode </p><p align="start"> 7. Toggle HDR (if device supports)</p>|<img src="https://github.com/robertlevonyan/CameraXDemo/blob/master/media/c1.jpg"  width="250" />| -|
+| ### Some Screenshots |-|-|
+|<img src="https://github.com/robertlevonyan/CameraXDemo/blob/master/media/c2.jpg"  width="150" />|<img src="https://github.com/robertlevonyan/CameraXDemo/blob/master/media/c3.jpg"  width="150" /> |<img src="https://github.com/robertlevonyan/CameraXDemo/blob/master/media/c4.jpg"  width="150" />
+|-----------------------------------|---------------------------------------------|---------------------------------------------------|
