@@ -14,7 +14,7 @@
 
 ## How to switch between photo and video
 
-<img src="https://github.com/robertlevonyan/CameraXDemo/blob/master/media/switch.gif" width="500"
+<img src="https://github.com/robertlevonyan/CameraXDemo/blob/master/media/switch.gif" width="500" />
 
 ## Contact
 
