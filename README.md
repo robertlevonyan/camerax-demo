@@ -12,6 +12,10 @@
 ||<h2 align="center">Some Screenshots</h2>||
 |<img src="https://github.com/robertlevonyan/CameraXDemo/blob/master/media/c2.jpg" width="250" />|<img src="https://github.com/robertlevonyan/CameraXDemo/blob/master/media/c3.jpg" width="250" /> |<img src="https://github.com/robertlevonyan/CameraXDemo/blob/master/media/c4.jpg" width="250" />
 
+## How to switch between photo and video
+
+<img src="https://github.com/robertlevonyan/CameraXDemo/blob/master/media/switch.gif" width="500"
+
 ## Contact
 
 - **Email**: me@robertlevonyan.com
