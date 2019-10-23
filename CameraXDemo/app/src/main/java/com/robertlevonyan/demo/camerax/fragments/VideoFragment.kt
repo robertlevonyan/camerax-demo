@@ -7,7 +7,6 @@ import android.content.res.Configuration
 import android.hardware.display.DisplayManager
 import android.os.Bundle
 import android.util.Log
-import android.util.Rational
 import android.view.GestureDetector
 import android.view.View
 import android.widget.Toast
@@ -41,10 +40,10 @@ class VideoFragment : BaseFragment<FragmentVideoBinding>(R.layout.fragment_video
     private var lensFacing = CameraX.LensFacing.BACK
     private var flashMode by Delegates.observable(FlashMode.OFF.ordinal) { _, _, new ->
         binding.buttonFlash.setImageResource(
-                when (new) {
-                    FlashMode.ON.ordinal -> R.drawable.ic_flash_on
-                    else -> R.drawable.ic_flash_off
-                }
+            when (new) {
+                FlashMode.ON.ordinal -> R.drawable.ic_flash_on
+                else -> R.drawable.ic_flash_off
+            }
         )
     }
     private var hasGrid = false
@@ -81,20 +80,25 @@ class VideoFragment : BaseFragment<FragmentVideoBinding>(R.layout.fragment_video
         hasGrid = prefs.getBoolean(KEY_GRID, false)
         initViews()
 
-        displayManager = requireContext().getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
+        displayManager =
+            requireContext().getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
         displayManager.registerDisplayListener(displayListener, null)
 
         binding.fragment = this // setting the variable for XML
-        binding.viewFinder.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+        binding.viewFinder.addOnAttachStateChangeListener(object :
+            View.OnAttachStateChangeListener {
             override fun onViewDetachedFromWindow(v: View) =
-                    displayManager.registerDisplayListener(displayListener, null)
+                displayManager.registerDisplayListener(displayListener, null)
 
-            override fun onViewAttachedToWindow(v: View) = displayManager.unregisterDisplayListener(displayListener)
+            override fun onViewAttachedToWindow(v: View) =
+                displayManager.unregisterDisplayListener(displayListener)
         })
 
         // This swipe gesture adds a fun gesture to switch between video and photo
         val swipeGestures = SwipeGestureDetector().apply {
-            setSwipeCallback(left = { Navigation.findNavController(view).navigate(R.id.action_video_to_camera) })
+            setSwipeCallback(left = {
+                Navigation.findNavController(view).navigate(R.id.action_video_to_camera)
+            })
         }
         val gestureDetectorCompat = GestureDetector(requireContext(), swipeGestures)
         view.setOnTouchListener { _, motionEvent ->
@@ -133,8 +137,8 @@ class VideoFragment : BaseFragment<FragmentVideoBinding>(R.layout.fragment_video
      *  toggleButton() function is an Extension function made to animate button rotation
      * */
     fun toggleCamera() = binding.buttonSwitchCamera.toggleButton(
-            lensFacing == CameraX.LensFacing.BACK, 180f,
-            R.drawable.ic_outline_camera_rear, R.drawable.ic_outline_camera_front
+        lensFacing == CameraX.LensFacing.BACK, 180f,
+        R.drawable.ic_outline_camera_rear, R.drawable.ic_outline_camera_front
     ) {
         lensFacing = if (it) CameraX.LensFacing.BACK else CameraX.LensFacing.FRONT
 
@@ -154,8 +158,8 @@ class VideoFragment : BaseFragment<FragmentVideoBinding>(R.layout.fragment_video
         // This is the Texture View where the camera will be rendered
         val viewFinder = binding.viewFinder
 
-        // The ratio for the output image and preview
-        val ratio = Rational(16, 9)
+        // The ratio for the output video and preview
+        val ratio = AspectRatio.RATIO_16_9
 
         // The Configuration of how we want to preview the camera
         val previewConfig = PreviewConfig.Builder().apply {
@@ -197,31 +201,30 @@ class VideoFragment : BaseFragment<FragmentVideoBinding>(R.layout.fragment_video
         if (!isRecording) {
             animateRecord.start()
             // Capture the video, first parameter is the file where the video should be stored, the second parameter is the callback after racording a video
-            videoCapture.startRecording(videoFile, object : VideoCapture.OnVideoSavedListener {
-                override fun onVideoSaved(file: File?) {
-                    file?.let { f ->
+            videoCapture.startRecording(
+                videoFile,
+                requireContext().mainExecutor(),
+                object : VideoCapture.OnVideoSavedListener {
+                    override fun onVideoSaved(file: File) {
                         // Create small preview
-                        setGalleryThumbnail(f)
-                        val msg = "Video saved in ${f.absolutePath}"
+                        setGalleryThumbnail(file)
+                        val msg = "Video saved in ${file.absolutePath}"
                         Log.d("CameraXDemo", msg)
-                    } ?: run {
-                        // Show a message if the video recording process was successful but the file was not saved
+                    }
+
+                    override fun onError(
+                        videoCaptureError: VideoCapture.VideoCaptureError,
+                        message: String,
+                        cause: Throwable?
+                    ) {
+                        // This function is called if there is some error during the video recording process
                         animateRecord.cancel()
-                        val msg = "Video not saved"
+                        val msg = "Video capture failed: $message"
                         Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
                         Log.e("CameraXApp", msg)
+                        cause?.printStackTrace()
                     }
-                }
-
-                override fun onError(useCaseError: VideoCapture.UseCaseError?, message: String?, cause: Throwable?) {
-                    // This function is called if there is some error during the video recording process
-                    animateRecord.cancel()
-                    val msg = "Video capture failed: $message"
-                    Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
-                    Log.e("CameraXApp", msg)
-                    cause?.printStackTrace()
-                }
-            })
+                })
         } else {
             animateRecord.cancel()
             videoCapture.stopRecording()
@@ -233,21 +236,26 @@ class VideoFragment : BaseFragment<FragmentVideoBinding>(R.layout.fragment_video
      * Turns on or off the grid on the screen
      * */
     fun toggleGrid() =
-            binding.buttonGrid.toggleButton(hasGrid, 180f, R.drawable.ic_grid_off, R.drawable.ic_grid_on) { flag ->
-                hasGrid = flag
-                prefs.putBoolean(KEY_GRID, flag)
-                binding.groupGridLines.visibility = if (flag) View.VISIBLE else View.GONE
-            }
+        binding.buttonGrid.toggleButton(
+            hasGrid,
+            180f,
+            R.drawable.ic_grid_off,
+            R.drawable.ic_grid_on
+        ) { flag ->
+            hasGrid = flag
+            prefs.putBoolean(KEY_GRID, flag)
+            binding.groupGridLines.visibility = if (flag) View.VISIBLE else View.GONE
+        }
 
     /**
      * Turns on or off the flashlight
      * */
     fun toggleFlash() {
         binding.buttonFlash.toggleButton(
-                flashMode == FlashMode.ON.ordinal,
-                360f,
-                R.drawable.ic_flash_off,
-                R.drawable.ic_flash_on
+            flashMode == FlashMode.ON.ordinal,
+            360f,
+            R.drawable.ic_flash_off,
+            R.drawable.ic_flash_on
         ) { flag ->
             isTorchOn = flag
             flashMode = if (flag) FlashMode.ON.ordinal else FlashMode.OFF.ordinal
@@ -267,7 +275,8 @@ class VideoFragment : BaseFragment<FragmentVideoBinding>(R.layout.fragment_video
                     // Check if there are any photos or videos in the app directory and preview the last one
                     outputDirectory.listFiles()?.firstOrNull()?.let {
                         setGalleryThumbnail(it)
-                    } ?: binding.buttonGallery.setImageResource(R.drawable.ic_no_picture) // or the default placeholder
+                    }
+                        ?: binding.buttonGallery.setImageResource(R.drawable.ic_no_picture) // or the default placeholder
                 }
                 preview.enableTorch(isTorchOn)
             }
@@ -278,9 +287,9 @@ class VideoFragment : BaseFragment<FragmentVideoBinding>(R.layout.fragment_video
         // Do the work on view's thread, this is needed, because the function is called in a Coroutine Scope's IO Dispatcher
         it.post {
             Glide.with(requireContext())
-                    .load(file)
-                    .apply(RequestOptions.circleCropTransform())
-                    .into(it)
+                .load(file)
+                .apply(RequestOptions.circleCropTransform())
+                .into(it)
         }
     }
 

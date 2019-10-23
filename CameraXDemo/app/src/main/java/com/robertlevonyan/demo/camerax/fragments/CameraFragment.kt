@@ -7,9 +7,7 @@ import android.hardware.display.DisplayManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
-import android.util.DisplayMetrics
 import android.util.Log
-import android.util.Rational
 import android.view.GestureDetector
 import android.view.View
 import android.widget.Toast
@@ -48,11 +46,11 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
     private var lensFacing = CameraX.LensFacing.BACK
     private var flashMode by Delegates.observable(FlashMode.OFF.ordinal) { _, _, new ->
         binding.buttonFlash.setImageResource(
-                when (new) {
-                    FlashMode.ON.ordinal -> R.drawable.ic_flash_on
-                    FlashMode.AUTO.ordinal -> R.drawable.ic_flash_auto
-                    else -> R.drawable.ic_flash_off
-                }
+            when (new) {
+                FlashMode.ON.ordinal -> R.drawable.ic_flash_on
+                FlashMode.AUTO.ordinal -> R.drawable.ic_flash_auto
+                else -> R.drawable.ic_flash_off
+            }
         )
     }
     private var hasGrid = false
@@ -85,20 +83,25 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
         hasHdr = prefs.getBoolean(KEY_HDR, false)
         initViews()
 
-        displayManager = requireContext().getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
+        displayManager =
+            requireContext().getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
         displayManager.registerDisplayListener(displayListener, null)
 
         binding.fragment = this // setting the variable for XML
-        binding.viewFinder.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+        binding.viewFinder.addOnAttachStateChangeListener(object :
+            View.OnAttachStateChangeListener {
             override fun onViewDetachedFromWindow(v: View) =
-                    displayManager.registerDisplayListener(displayListener, null)
+                displayManager.registerDisplayListener(displayListener, null)
 
-            override fun onViewAttachedToWindow(v: View) = displayManager.unregisterDisplayListener(displayListener)
+            override fun onViewAttachedToWindow(v: View) =
+                displayManager.unregisterDisplayListener(displayListener)
         })
 
         // This swipe gesture adds a fun gesture to switch between video and photo
         val swipeGestures = SwipeGestureDetector().apply {
-            setSwipeCallback(right = { Navigation.findNavController(view).navigate(R.id.action_camera_to_video) })
+            setSwipeCallback(right = {
+                Navigation.findNavController(view).navigate(R.id.action_camera_to_video)
+            })
         }
         val gestureDetectorCompat = GestureDetector(requireContext(), swipeGestures)
         view.setOnTouchListener { _, motionEvent ->
@@ -137,8 +140,8 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
      * */
     @SuppressLint("RestrictedApi")
     fun toggleCamera() = binding.buttonSwitchCamera.toggleButton(
-            lensFacing == CameraX.LensFacing.BACK, 180f,
-            R.drawable.ic_outline_camera_rear, R.drawable.ic_outline_camera_front
+        lensFacing == CameraX.LensFacing.BACK, 180f,
+        R.drawable.ic_outline_camera_rear, R.drawable.ic_outline_camera_front
     ) {
         lensFacing = if (it) CameraX.LensFacing.BACK else CameraX.LensFacing.FRONT
 
@@ -174,24 +177,24 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
      *  circularClose() function is an Extension function which is adding circular close
      * */
     fun closeTimerAndSelect(timer: CameraTimer) =
-            binding.layoutTimerOptions.circularClose(binding.buttonTimer) {
-                binding.buttonTimer.setImageResource(
-                        when (timer) {
-                            CameraTimer.S3 -> {
-                                selectedTimer = CameraTimer.S3
-                                R.drawable.ic_timer_3
-                            }
-                            CameraTimer.S10 -> {
-                                selectedTimer = CameraTimer.S10
-                                R.drawable.ic_timer_10
-                            }
-                            else -> {
-                                selectedTimer = CameraTimer.OFF
-                                R.drawable.ic_timer_off
-                            }
-                        }
-                )
-            }
+        binding.layoutTimerOptions.circularClose(binding.buttonTimer) {
+            binding.buttonTimer.setImageResource(
+                when (timer) {
+                    CameraTimer.S3 -> {
+                        selectedTimer = CameraTimer.S3
+                        R.drawable.ic_timer_3
+                    }
+                    CameraTimer.S10 -> {
+                        selectedTimer = CameraTimer.S10
+                        R.drawable.ic_timer_10
+                    }
+                    else -> {
+                        selectedTimer = CameraTimer.OFF
+                        R.drawable.ic_timer_off
+                    }
+                }
+            )
+        }
 
     /**
      * Show flashlight selection menu by circular reveal animation.
@@ -205,21 +208,26 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
      *  circularClose() function is an Extension function which is adding circular close
      * */
     fun closeFlashAndSelect(flash: FlashMode) =
-            binding.layoutFlashOptions.circularClose(binding.buttonFlash) {
-                flashMode = when (flash) {
-                    FlashMode.ON -> FlashMode.ON.ordinal
-                    FlashMode.AUTO -> FlashMode.AUTO.ordinal
-                    else -> FlashMode.OFF.ordinal
-                }
-                prefs.putInt(KEY_FLASH, flashMode)
-                imageCapture.flashMode = getFlashMode()
+        binding.layoutFlashOptions.circularClose(binding.buttonFlash) {
+            flashMode = when (flash) {
+                FlashMode.ON -> FlashMode.ON.ordinal
+                FlashMode.AUTO -> FlashMode.AUTO.ordinal
+                else -> FlashMode.OFF.ordinal
             }
+            prefs.putInt(KEY_FLASH, flashMode)
+            imageCapture.flashMode = getFlashMode()
+        }
 
     /**
      * Turns on or off the grid on the screen
      * */
     fun toggleGrid() {
-        binding.buttonGrid.toggleButton(hasGrid, 180f, R.drawable.ic_grid_off, R.drawable.ic_grid_on) { flag ->
+        binding.buttonGrid.toggleButton(
+            hasGrid,
+            180f,
+            R.drawable.ic_grid_off,
+            R.drawable.ic_grid_on
+        ) { flag ->
             hasGrid = flag
             prefs.putBoolean(KEY_GRID, flag)
             binding.groupGridLines.visibility = if (flag) View.VISIBLE else View.GONE
@@ -230,7 +238,12 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
      * Turns on or off the HDR if available
      * */
     fun toggleHdr() {
-        binding.buttonHdr.toggleButton(hasHdr, 360f, R.drawable.ic_hdr_off, R.drawable.ic_hdr_on) { flag ->
+        binding.buttonHdr.toggleButton(
+            hasHdr,
+            360f,
+            R.drawable.ic_hdr_off,
+            R.drawable.ic_hdr_on
+        ) { flag ->
             hasHdr = flag
             prefs.putBoolean(KEY_HDR, flag)
             recreateCamera()
@@ -249,7 +262,8 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
                     // Check if there are any photos or videos in the app directory and preview the last one
                     outputDirectory.listFiles()?.firstOrNull()?.let {
                         setGalleryThumbnail(it)
-                    } ?: binding.buttonGallery.setImageResource(R.drawable.ic_no_picture) // or the default placeholder
+                    }
+                        ?: binding.buttonGallery.setImageResource(R.drawable.ic_no_picture) // or the default placeholder
                 }
             }
         }
@@ -259,10 +273,8 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
         // This is the Texture View where the camera will be rendered
         val viewFinder = binding.viewFinder
 
-        // Display metrics to get the screen size
-        val metrics = DisplayMetrics().also { viewFinder.display.getRealMetrics(it) }
         // The ratio for the output image and preview
-        val ratio = Rational(metrics.widthPixels, metrics.heightPixels)
+        val ratio = AspectRatio.RATIO_4_3
 
         // The Configuration of how we want to preview the camera
         val previewConfig = PreviewConfig.Builder().apply {
@@ -299,9 +311,6 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
 
         // The Configuration for image analyzing
         val analyzerConfig = ImageAnalysisConfig.Builder().apply {
-            // Use a worker thread for image analysis to prevent glitches
-            val analyzerThread = HandlerThread("LuminosityAnalysis").apply { start() }
-            setCallbackHandler(Handler(analyzerThread.looper))
             // In our analysis, we care more about the latest image than
             // analyzing *every* image
             setImageReaderMode(ImageAnalysis.ImageReaderMode.ACQUIRE_LATEST_IMAGE)
@@ -309,7 +318,9 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
 
         // Create an Image Analyzer Use Case instance for luminosity analysis
         val analyzerUseCase = ImageAnalysis(analyzerConfig).apply {
-            analyzer = LuminosityAnalyzer()
+            // Use a worker thread for image analysis to prevent glitches
+            val analyzerThread = HandlerThread("LuminosityAnalysis").apply { start() }
+            setAnalyzer(ThreadExecutor(Handler(analyzerThread.looper)), LuminosityAnalyzer())
         }
 
         // Check for lens facing to add or not the Image Analyzer Use Case
@@ -347,31 +358,38 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
         // Create the output file
         val imageFile = File(outputDirectory, "${System.currentTimeMillis()}.jpg")
         // Capture the image, first parameter is the file where the image should be stored, the second parameter is the callback after taking a photo
-        imageCapture.takePicture(imageFile, object : ImageCapture.OnImageSavedListener {
-            override fun onImageSaved(file: File) { // the resulting file of taken photo
-                // Create small preview
-                setGalleryThumbnail(file)
-                val msg = "Photo saved in ${file.absolutePath}"
-                Log.d("CameraXDemo", msg)
-            }
+        imageCapture.takePicture(
+            imageFile,
+            requireContext().mainExecutor(),
+            object : ImageCapture.OnImageSavedListener {
+                override fun onImageSaved(file: File) { // the resulting file of taken photo
+                    // Create small preview
+                    setGalleryThumbnail(file)
+                    val msg = "Photo saved in ${file.absolutePath}"
+                    Log.d("CameraXDemo", msg)
+                }
 
-            override fun onError(useCaseError: ImageCapture.UseCaseError, message: String, cause: Throwable?) {
-                // This function is called if there is some error during capture process
-                val msg = "Photo capture failed: $message"
-                Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
-                Log.e("CameraXApp", msg)
-                cause?.printStackTrace()
-            }
-        })
+                override fun onError(
+                    imageCaptureError: ImageCapture.ImageCaptureError,
+                    message: String,
+                    cause: Throwable?
+                ) {
+                    // This function is called if there is some error during capture process
+                    val msg = "Photo capture failed: $message"
+                    Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
+                    Log.e("CameraXApp", msg)
+                    cause?.printStackTrace()
+                }
+            })
     }
 
     private fun setGalleryThumbnail(file: File) = binding.buttonGallery.let {
         // Do the work on view's thread, this is needed, because the function is called in a Coroutine Scope's IO Dispatcher
         it.post {
             Glide.with(requireContext())
-                    .load(file)
-                    .apply(RequestOptions.circleCropTransform())
-                    .into(it)
+                .load(file)
+                .apply(RequestOptions.circleCropTransform())
+                .into(it)
         }
     }
 
@@ -382,8 +400,12 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
 
     override fun onBackPressed() {
         when {
-            binding.layoutTimerOptions.visibility == View.VISIBLE -> binding.layoutTimerOptions.circularClose(binding.buttonTimer)
-            binding.layoutFlashOptions.visibility == View.VISIBLE -> binding.layoutFlashOptions.circularClose(binding.buttonFlash)
+            binding.layoutTimerOptions.visibility == View.VISIBLE -> binding.layoutTimerOptions.circularClose(
+                binding.buttonTimer
+            )
+            binding.layoutFlashOptions.visibility == View.VISIBLE -> binding.layoutFlashOptions.circularClose(
+                binding.buttonFlash
+            )
             else -> requireActivity().finish()
         }
     }

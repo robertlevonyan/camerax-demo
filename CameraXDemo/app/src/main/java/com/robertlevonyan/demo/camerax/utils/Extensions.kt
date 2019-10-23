@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
+import android.os.Build
 import android.view.*
 import android.view.View.*
 import android.widget.ImageButton
@@ -19,6 +20,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
+import java.util.concurrent.Executor
 
 fun ImageButton.toggleButton(
     flag: Boolean, rotationAngle: Float, @DrawableRes firstIcon: Int, @DrawableRes secondIcon: Int,
@@ -109,6 +111,12 @@ fun ViewPager2.onPageSelected(action: (Int) -> Unit) {
             action(position)
         }
     })
+}
+
+fun Context.mainExecutor(): Executor = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+    mainExecutor
+} else {
+    MainExecutor()
 }
 
 val Context.layoutInflater: LayoutInflater
