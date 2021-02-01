@@ -1,181 +1,167 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools">
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black"
+    tools:context=".fragments.VideoFragment">
 
-    <data>
+    <androidx.camera.view.PreviewView
+        android:id="@+id/viewFinder"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-        <variable
-            name="fragment"
-            type="com.robertlevonyan.demo.camerax.fragments.VideoFragment" />
-    </data>
-
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
+    <View
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:alpha="0.4"
         android:background="@android:color/black"
-        tools:context=".fragments.VideoFragment">
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@id/btnRecordVideo" />
 
-        <TextureView
-            android:id="@+id/viewFinder"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+    <ImageButton
+        android:id="@+id/btnRecordVideo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@android:color/transparent"
+        android:padding="@dimen/double_margin"
+        android:src="@drawable/ic_take_video"
+        app:backgroundTint="@android:color/transparent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
-        <View
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:alpha="0.4"
-            android:background="@android:color/black"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@id/fabRecordVideo" />
+    <ImageButton
+        android:id="@+id/btnGallery"
+        android:layout_width="@dimen/button_size_small"
+        android:layout_height="@dimen/button_size_small"
+        android:background="@android:color/transparent"
+        android:elevation="1dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/ic_no_picture"
+        app:layout_constraintBottom_toBottomOf="@id/btnRecordVideo"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/btnRecordVideo"
+        app:layout_constraintTop_toTopOf="@id/btnRecordVideo" />
 
-        <ImageButton
-            android:id="@+id/fabRecordVideo"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@android:color/transparent"
-            android:padding="@dimen/double_margin"
-            android:src="@drawable/ic_take_video"
-            app:backgroundTint="@android:color/transparent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"/>
+    <ImageButton
+        android:id="@+id/btnSwitchCamera"
+        android:layout_width="@dimen/button_size_small"
+        android:layout_height="@dimen/button_size_small"
+        android:background="@drawable/bg_button_round"
+        android:elevation="1dp"
+        android:padding="@dimen/half_margin"
+        android:scaleType="centerInside"
+        android:src="@drawable/ic_outline_camera_front"
+        app:layout_constraintBottom_toBottomOf="@id/btnRecordVideo"
+        app:layout_constraintEnd_toStartOf="@id/btnRecordVideo"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@id/btnRecordVideo" />
 
-        <ImageButton
-            android:id="@+id/buttonGallery"
-            android:layout_width="@dimen/button_size_small"
-            android:layout_height="@dimen/button_size_small"
-            android:background="@android:color/transparent"
-            android:elevation="1dp"
-            android:onClick="@{() -> fragment.openPreview()}"
-            android:scaleType="centerCrop"
-            android:src="@drawable/ic_no_picture"
-            app:layout_constraintBottom_toBottomOf="@id/fabRecordVideo"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@id/fabRecordVideo"
-            app:layout_constraintTop_toTopOf="@id/fabRecordVideo" />
+    <View
+        android:id="@+id/viewBg2"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:alpha="0.4"
+        android:background="@android:color/black"
+        android:elevation="1dp"
+        app:layout_constraintBottom_toBottomOf="@id/btnFlash"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-        <ImageButton
-            android:id="@+id/buttonSwitchCamera"
-            android:layout_width="@dimen/button_size_small"
-            android:layout_height="@dimen/button_size_small"
-            android:background="@drawable/bg_button_round"
-            android:elevation="1dp"
-            android:onClick="@{() -> fragment.toggleCamera()}"
-            android:padding="@dimen/half_margin"
-            android:scaleType="centerInside"
-            android:src="@drawable/ic_outline_camera_front"
-            app:layout_constraintBottom_toBottomOf="@id/fabRecordVideo"
-            app:layout_constraintEnd_toStartOf="@id/fabRecordVideo"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@id/fabRecordVideo" />
+    <ImageButton
+        android:id="@+id/btnGrid"
+        android:layout_width="@dimen/button_size_small"
+        android:layout_height="@dimen/button_size_small"
+        android:background="@android:color/transparent"
+        android:elevation="1dp"
+        android:padding="@dimen/half_margin"
+        android:scaleType="centerInside"
+        android:src="@drawable/ic_grid_off"
+        app:layout_constraintBottom_toBottomOf="@id/btnFlash"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.3"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@id/btnFlash" />
 
-        <View
-            android:id="@+id/viewBg2"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:alpha="0.4"
-            android:background="@android:color/black"
-            android:elevation="1dp"
-            app:layout_constraintBottom_toBottomOf="@id/buttonFlash"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+    <ImageButton
+        android:id="@+id/btnFlash"
+        android:layout_width="@dimen/button_size_small"
+        android:layout_height="@dimen/button_size_small"
+        android:background="@android:color/transparent"
+        android:elevation="1dp"
+        android:padding="@dimen/half_margin"
+        android:scaleType="centerInside"
+        android:src="@drawable/ic_flash_off"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.7"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-        <ImageButton
-            android:id="@+id/buttonGrid"
-            android:layout_width="@dimen/button_size_small"
-            android:layout_height="@dimen/button_size_small"
-            android:background="@android:color/transparent"
-            android:elevation="1dp"
-            android:onClick="@{()->fragment.toggleGrid()}"
-            android:padding="@dimen/half_margin"
-            android:scaleType="centerInside"
-            android:src="@drawable/ic_grid_off"
-            app:layout_constraintBottom_toBottomOf="@id/buttonFlash"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.3"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@id/buttonFlash" />
+    <View
+        android:id="@+id/gridVertical1"
+        android:layout_width="1dp"
+        android:layout_height="0dp"
+        android:alpha="0.5"
+        android:background="@android:color/white"
+        android:elevation="2dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.33"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-        <ImageButton
-            android:id="@+id/buttonFlash"
-            android:layout_width="@dimen/button_size_small"
-            android:layout_height="@dimen/button_size_small"
-            android:background="@android:color/transparent"
-            android:elevation="1dp"
-            android:onClick="@{() -> fragment.toggleFlash()}"
-            android:padding="@dimen/half_margin"
-            android:scaleType="centerInside"
-            android:src="@drawable/ic_flash_off"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.7"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+    <View
+        android:id="@+id/gridVertical2"
+        android:layout_width="1dp"
+        android:layout_height="0dp"
+        android:alpha="0.5"
+        android:background="@android:color/white"
+        android:elevation="2dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.66"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-        <View
-            android:id="@+id/gridVertical1"
-            android:layout_width="1dp"
-            android:layout_height="0dp"
-            android:alpha="0.5"
-            android:background="@android:color/white"
-            android:elevation="2dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.33"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+    <View
+        android:id="@+id/gridHorizontal1"
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:alpha="0.5"
+        android:background="@android:color/white"
+        android:elevation="2dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.33" />
 
-        <View
-            android:id="@+id/gridVertical2"
-            android:layout_width="1dp"
-            android:layout_height="0dp"
-            android:alpha="0.5"
-            android:background="@android:color/white"
-            android:elevation="2dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.66"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+    <View
+        android:id="@+id/gridHorizontal2"
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:alpha="0.5"
+        android:background="@android:color/white"
+        android:elevation="2dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.66" />
 
-        <View
-            android:id="@+id/gridHorizontal1"
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:alpha="0.5"
-            android:background="@android:color/white"
-            android:elevation="2dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.33" />
-
-        <View
-            android:id="@+id/gridHorizontal2"
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:alpha="0.5"
-            android:background="@android:color/white"
-            android:elevation="2dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.66" />
-
-        <androidx.constraintlayout.widget.Group
-            android:id="@+id/groupGridLines"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:visibility="gone"
-            app:constraint_referenced_ids="gridVertical1,gridVertical2,gridHorizontal1,gridHorizontal2" />
-    </androidx.constraintlayout.widget.ConstraintLayout>
-</layout>
+    <androidx.constraintlayout.widget.Group
+        android:id="@+id/groupGridLines"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:constraint_referenced_ids="gridVertical1,gridVertical2,gridHorizontal1,gridHorizontal2" />
+</androidx.constraintlayout.widget.ConstraintLayout>

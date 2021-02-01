@@ -16,8 +16,7 @@ class LuminosityAnalyzer: ImageAnalysis.Analyzer {
         return data // Return the byte array
     }
 
-    override fun analyze(image: ImageProxy?, rotationDegrees: Int) {
-        if (image == null) return
+    override fun analyze(image: ImageProxy) {
         val currentTimestamp = System.currentTimeMillis()
         // Calculate the average luma no more often than every second
         if (currentTimestamp - lastAnalyzedTimestamp >= TimeUnit.SECONDS.toMillis(1)) {

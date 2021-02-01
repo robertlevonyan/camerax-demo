@@ -1,22 +1,33 @@
 package com.robertlevonyan.demo.camerax.fragments
 
 import android.annotation.SuppressLint
+import android.content.ContentValues
 import android.content.Context
 import android.content.res.Configuration
 import android.hardware.display.DisplayManager
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
+import android.provider.MediaStore
+import android.util.DisplayMetrics
 import android.util.Log
 import android.view.GestureDetector
 import android.view.View
 import android.widget.Toast
 import androidx.camera.core.*
+import androidx.camera.core.ImageCapture.*
 import androidx.camera.extensions.HdrImageCaptureExtender
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.core.content.ContextCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
-import com.bumptech.glide.Glide
-import com.bumptech.glide.request.RequestOptions
+import coil.fetch.VideoFrameUriFetcher
+import coil.load
+import coil.request.ImageRequest
+import coil.transform.CircleCropTransformation
 import com.robertlevonyan.demo.camerax.R
 import com.robertlevonyan.demo.camerax.analyzer.LuminosityAnalyzer
 import com.robertlevonyan.demo.camerax.databinding.FragmentCameraBinding
@@ -26,35 +37,60 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
+import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.min
 import kotlin.properties.Delegates
 
 class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_camera) {
     companion object {
         private const val TAG = "CameraXDemo"
+
         const val KEY_FLASH = "sPrefFlashCamera"
         const val KEY_GRID = "sPrefGridCamera"
         const val KEY_HDR = "sPrefHDR"
+
+        private const val RATIO_4_3_VALUE = 4.0 / 3.0 // aspect ratio 4x3
+        private const val RATIO_16_9_VALUE = 16.0 / 9.0 // aspect ratio 16x9
     }
 
-    private lateinit var displayManager: DisplayManager
-    private lateinit var prefs: SharedPrefsManager
-    private lateinit var preview: Preview
-    private lateinit var imageCapture: ImageCapture
-    private lateinit var imageAnalyzer: ImageAnalysis
+    // An instance for display manager to get display change callbacks
+    private val displayManager by lazy { requireContext().getSystemService(Context.DISPLAY_SERVICE) as DisplayManager }
+
+    // An instance of a helper function to work with Shared Preferences
+    private val prefs by lazy { SharedPrefsManager.newInstance(requireContext()) }
+
+    private var preview: Preview? = null
+    private var cameraProvider: ProcessCameraProvider? = null
+    private var imageCapture: ImageCapture? = null
+    private var imageAnalyzer: ImageAnalysis? = null
+
+    // A lazy instance of the current fragment's view binding
+    override val binding: FragmentCameraBinding by lazy { FragmentCameraBinding.inflate(layoutInflater) }
 
     private var displayId = -1
-    private var lensFacing = CameraX.LensFacing.BACK
-    private var flashMode by Delegates.observable(FlashMode.OFF.ordinal) { _, _, new ->
-        binding.buttonFlash.setImageResource(
+
+    // Selector showing which camera is selected (front or back)
+    private var lensFacing = CameraSelector.DEFAULT_BACK_CAMERA
+
+    // Selector showing which flash mode is selected (on, off or auto)
+    private var flashMode by Delegates.observable(FLASH_MODE_OFF) { _, _, new ->
+        binding.btnFlash.setImageResource(
             when (new) {
-                FlashMode.ON.ordinal -> R.drawable.ic_flash_on
-                FlashMode.AUTO.ordinal -> R.drawable.ic_flash_auto
+                FLASH_MODE_ON -> R.drawable.ic_flash_on
+                FLASH_MODE_AUTO -> R.drawable.ic_flash_auto
                 else -> R.drawable.ic_flash_off
             }
         )
     }
+
+    // Selector showing is grid enabled or not
     private var hasGrid = false
+
+    // Selector showing is hdr enabled or not (will work, only if device's camera supports hdr on hardware level)
     private var hasHdr = false
+
+    // Selector showing is there any selected timer and it's value (3s or 10s)
     private var selectedTimer = CameraTimer.OFF
 
     /**
@@ -65,11 +101,13 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
     private val displayListener = object : DisplayManager.DisplayListener {
         override fun onDisplayAdded(displayId: Int) = Unit
         override fun onDisplayRemoved(displayId: Int) = Unit
+
+        @SuppressLint("UnsafeExperimentalUsageError")
         override fun onDisplayChanged(displayId: Int) = view?.let { view ->
             if (displayId == this@CameraFragment.displayId) {
-                preview.setTargetRotation(view.display.rotation)
-                imageCapture.setTargetRotation(view.display.rotation)
-                imageAnalyzer.setTargetRotation(view.display.rotation)
+                preview?.targetRotation = view.display.rotation
+                imageCapture?.targetRotation = view.display.rotation
+                imageAnalyzer?.targetRotation = view.display.rotation
             }
         } ?: Unit
     }
@@ -77,36 +115,47 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
     @SuppressLint("ClickableViewAccessibility")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        prefs = SharedPrefsManager.newInstance(requireContext())
-        flashMode = prefs.getInt(KEY_FLASH, FlashMode.OFF.ordinal)
+        flashMode = prefs.getInt(KEY_FLASH, FLASH_MODE_OFF)
         hasGrid = prefs.getBoolean(KEY_GRID, false)
         hasHdr = prefs.getBoolean(KEY_HDR, false)
         initViews()
 
-        displayManager =
-            requireContext().getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
         displayManager.registerDisplayListener(displayListener, null)
 
-        binding.fragment = this // setting the variable for XML
-        binding.viewFinder.addOnAttachStateChangeListener(object :
-            View.OnAttachStateChangeListener {
-            override fun onViewDetachedFromWindow(v: View) =
-                displayManager.registerDisplayListener(displayListener, null)
+        binding.run {
+            viewFinder.addOnAttachStateChangeListener(object :
+                View.OnAttachStateChangeListener {
+                override fun onViewDetachedFromWindow(v: View) =
+                    displayManager.registerDisplayListener(displayListener, null)
 
-            override fun onViewAttachedToWindow(v: View) =
-                displayManager.unregisterDisplayListener(displayListener)
-        })
-
-        // This swipe gesture adds a fun gesture to switch between video and photo
-        val swipeGestures = SwipeGestureDetector().apply {
-            setSwipeCallback(right = {
-                Navigation.findNavController(view).navigate(R.id.action_camera_to_video)
+                override fun onViewAttachedToWindow(v: View) =
+                    displayManager.unregisterDisplayListener(displayListener)
             })
-        }
-        val gestureDetectorCompat = GestureDetector(requireContext(), swipeGestures)
-        view.setOnTouchListener { _, motionEvent ->
-            if (gestureDetectorCompat.onTouchEvent(motionEvent)) return@setOnTouchListener false
-            return@setOnTouchListener true
+            btnTakePicture.setOnClickListener { takePicture() }
+            btnGallery.setOnClickListener { openPreview() }
+            btnSwitchCamera.setOnClickListener { toggleCamera() }
+            btnTimer.setOnClickListener { selectTimer() }
+            btnGrid.setOnClickListener { toggleGrid() }
+            btnFlash.setOnClickListener { selectFlash() }
+            btnHdr.setOnClickListener { toggleHdr() }
+            btnTimerOff.setOnClickListener { closeTimerAndSelect(CameraTimer.OFF) }
+            btnTimer3.setOnClickListener { closeTimerAndSelect(CameraTimer.S3) }
+            btnTimer10.setOnClickListener { closeTimerAndSelect(CameraTimer.S10) }
+            btnFlashOff.setOnClickListener { closeFlashAndSelect(FLASH_MODE_OFF) }
+            btnFlashOn.setOnClickListener { closeFlashAndSelect(FLASH_MODE_ON) }
+            btnFlashAuto.setOnClickListener { closeFlashAndSelect(FLASH_MODE_AUTO) }
+
+            // This swipe gesture adds a fun gesture to switch between video and photo
+            val swipeGestures = SwipeGestureDetector().apply {
+                setSwipeCallback(right = {
+                    Navigation.findNavController(view).navigate(R.id.action_camera_to_video)
+                })
+            }
+            val gestureDetectorCompat = GestureDetector(requireContext(), swipeGestures)
+            viewFinder.setOnTouchListener { _, motionEvent ->
+                if (gestureDetectorCompat.onTouchEvent(motionEvent)) return@setOnTouchListener false
+                return@setOnTouchListener true
+            }
         }
     }
 
@@ -114,7 +163,7 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
      * Create some initial states
      * */
     private fun initViews() {
-        binding.buttonGrid.setImageResource(if (hasGrid) R.drawable.ic_grid_on else R.drawable.ic_grid_off)
+        binding.btnGrid.setImageResource(if (hasGrid) R.drawable.ic_grid_on else R.drawable.ic_grid_off)
         binding.groupGridLines.visibility = if (hasGrid) View.VISIBLE else View.GONE
         adjustInsets()
     }
@@ -123,14 +172,15 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
      * This methods adds all necessary margins to some views based on window insets and screen orientation
      * */
     private fun adjustInsets() {
-        binding.viewFinder.fitSystemWindows()
-        binding.fabTakePicture.onWindowInsets { view, windowInsets ->
+        activity?.window?.fitSystemWindows()
+        binding.btnTakePicture.onWindowInsets { view, windowInsets ->
             if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT)
-                view.bottomMargin = windowInsets.systemWindowInsetBottom
-            else view.endMargin = windowInsets.systemWindowInsetRight
+                view.bottomMargin =
+                    windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom
+            else view.endMargin = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()).right
         }
-        binding.buttonTimer.onWindowInsets { view, windowInsets ->
-            view.topMargin = windowInsets.systemWindowInsetTop
+        binding.btnTimer.onWindowInsets { view, windowInsets ->
+            view.topMargin = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()).top
         }
     }
 
@@ -139,59 +189,48 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
      *  toggleButton() function is an Extension function made to animate button rotation
      * */
     @SuppressLint("RestrictedApi")
-    fun toggleCamera() = binding.buttonSwitchCamera.toggleButton(
-        lensFacing == CameraX.LensFacing.BACK, 180f,
-        R.drawable.ic_outline_camera_rear, R.drawable.ic_outline_camera_front
+    fun toggleCamera() = binding.btnSwitchCamera.toggleButton(
+        flag = lensFacing == CameraSelector.DEFAULT_BACK_CAMERA,
+        rotationAngle = 180f,
+        firstIcon = R.drawable.ic_outline_camera_rear,
+        secondIcon = R.drawable.ic_outline_camera_front,
     ) {
-        lensFacing = if (it) CameraX.LensFacing.BACK else CameraX.LensFacing.FRONT
+        lensFacing = if (it) {
+            CameraSelector.DEFAULT_BACK_CAMERA
+        } else {
+            CameraSelector.DEFAULT_FRONT_CAMERA
+        }
 
-        CameraX.getCameraWithLensFacing(lensFacing)
-        recreateCamera()
-    }
-
-    /**
-     * Unbinds all the lifecycles from CameraX, then creates new with new parameters
-     * */
-    private fun recreateCamera() {
-        CameraX.unbindAll()
         startCamera()
     }
 
     /**
      * Navigate to PreviewFragment
      * */
-    fun openPreview() {
-        if (!outputDirectory.listFiles().isNullOrEmpty())
-            view?.let { Navigation.findNavController(it).navigate(R.id.action_camera_to_preview) }
+    private fun openPreview() {
+        if (getMedia().isEmpty()) return
+        view?.let { Navigation.findNavController(it).navigate(R.id.action_camera_to_preview) }
     }
 
     /**
      * Show timer selection menu by circular reveal animation.
      *  circularReveal() function is an Extension function which is adding the circular reveal
      * */
-    fun selectTimer() = binding.layoutTimerOptions.circularReveal(binding.buttonTimer)
+    private fun selectTimer() = binding.llTimerOptions.circularReveal(binding.btnTimer)
 
     /**
      * This function is called from XML view via Data Binding to select a timer
      *  possible values are OFF, S3 or S10
      *  circularClose() function is an Extension function which is adding circular close
      * */
-    fun closeTimerAndSelect(timer: CameraTimer) =
-        binding.layoutTimerOptions.circularClose(binding.buttonTimer) {
-            binding.buttonTimer.setImageResource(
+    private fun closeTimerAndSelect(timer: CameraTimer) =
+        binding.llTimerOptions.circularClose(binding.btnTimer) {
+            selectedTimer = timer
+            binding.btnTimer.setImageResource(
                 when (timer) {
-                    CameraTimer.S3 -> {
-                        selectedTimer = CameraTimer.S3
-                        R.drawable.ic_timer_3
-                    }
-                    CameraTimer.S10 -> {
-                        selectedTimer = CameraTimer.S10
-                        R.drawable.ic_timer_10
-                    }
-                    else -> {
-                        selectedTimer = CameraTimer.OFF
-                        R.drawable.ic_timer_off
-                    }
+                    CameraTimer.S3 -> R.drawable.ic_timer_3
+                    CameraTimer.S10 -> R.drawable.ic_timer_10
+                    CameraTimer.OFF -> R.drawable.ic_timer_off
                 }
             )
         }
@@ -200,33 +239,36 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
      * Show flashlight selection menu by circular reveal animation.
      *  circularReveal() function is an Extension function which is adding the circular reveal
      * */
-    fun selectFlash() = binding.layoutFlashOptions.circularReveal(binding.buttonFlash)
+    private fun selectFlash() = binding.llFlashOptions.circularReveal(binding.btnFlash)
 
     /**
      * This function is called from XML view via Data Binding to select a FlashMode
      *  possible values are ON, OFF or AUTO
      *  circularClose() function is an Extension function which is adding circular close
      * */
-    fun closeFlashAndSelect(flash: FlashMode) =
-        binding.layoutFlashOptions.circularClose(binding.buttonFlash) {
-            flashMode = when (flash) {
-                FlashMode.ON -> FlashMode.ON.ordinal
-                FlashMode.AUTO -> FlashMode.AUTO.ordinal
-                else -> FlashMode.OFF.ordinal
-            }
+    private fun closeFlashAndSelect(@FlashMode flash: Int) =
+        binding.llFlashOptions.circularClose(binding.btnFlash) {
+            flashMode = flash
+            binding.btnFlash.setImageResource(
+                when (flash) {
+                    FLASH_MODE_ON -> R.drawable.ic_flash_on
+                    FLASH_MODE_OFF -> R.drawable.ic_flash_off
+                    else -> R.drawable.ic_flash_auto
+                }
+            )
+            imageCapture?.flashMode = flashMode
             prefs.putInt(KEY_FLASH, flashMode)
-            imageCapture.flashMode = getFlashMode()
         }
 
     /**
      * Turns on or off the grid on the screen
      * */
-    fun toggleGrid() {
-        binding.buttonGrid.toggleButton(
-            hasGrid,
-            180f,
-            R.drawable.ic_grid_off,
-            R.drawable.ic_grid_on
+    private fun toggleGrid() {
+        binding.btnGrid.toggleButton(
+            flag = hasGrid,
+            rotationAngle = 180f,
+            firstIcon = R.drawable.ic_grid_off,
+            secondIcon = R.drawable.ic_grid_on,
         ) { flag ->
             hasGrid = flag
             prefs.putBoolean(KEY_GRID, flag)
@@ -237,16 +279,16 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
     /**
      * Turns on or off the HDR if available
      * */
-    fun toggleHdr() {
-        binding.buttonHdr.toggleButton(
-            hasHdr,
-            360f,
-            R.drawable.ic_hdr_off,
-            R.drawable.ic_hdr_on
+    private fun toggleHdr() {
+        binding.btnHdr.toggleButton(
+            flag = hasHdr,
+            rotationAngle = 360f,
+            firstIcon = R.drawable.ic_hdr_off,
+            secondIcon = R.drawable.ic_hdr_on,
         ) { flag ->
             hasHdr = flag
             prefs.putBoolean(KEY_HDR, flag)
-            recreateCamera()
+            startCamera()
         }
     }
 
@@ -256,141 +298,205 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
             vf.post {
                 // Setting current display ID
                 displayId = vf.display.displayId
-                recreateCamera()
+                startCamera()
                 lifecycleScope.launch(Dispatchers.IO) {
                     // Do on IO Dispatcher
-                    // Check if there are any photos or videos in the app directory and preview the last one
-                    outputDirectory.listFiles()?.firstOrNull()?.let {
-                        setGalleryThumbnail(it)
-                    }
-                        ?: binding.buttonGallery.setImageResource(R.drawable.ic_no_picture) // or the default placeholder
+                    setLastPictureThumbnail()
                 }
             }
         }
     }
 
-    private fun startCamera() {
-        // This is the Texture View where the camera will be rendered
-        val viewFinder = binding.viewFinder
-
-        // The ratio for the output image and preview
-        val ratio = AspectRatio.RATIO_4_3
-
-        // The Configuration of how we want to preview the camera
-        val previewConfig = PreviewConfig.Builder().apply {
-            setTargetAspectRatio(ratio) // setting the aspect ration
-            setLensFacing(lensFacing) // setting the lens facing (front or back)
-            setTargetRotation(viewFinder.display.rotation) // setting the rotation of the camera
-        }.build()
-
-        // Create an instance of Camera Preview
-        preview = AutoFitPreviewBuilder.build(previewConfig, viewFinder)
-
-        // The Configuration of how we want to capture the image
-        val imageCaptureConfig = ImageCaptureConfig.Builder().apply {
-            setTargetAspectRatio(ratio) // setting the aspect ration
-            setLensFacing(lensFacing) // setting the lens facing (front or back)
-            setCaptureMode(ImageCapture.CaptureMode.MAX_QUALITY) // setting to have pictures with highest quality possible
-            setTargetRotation(viewFinder.display.rotation) // setting the rotation of the camera
-            setFlashMode(getFlashMode()) // setting the flash
-        }
-
-        imageCapture = ImageCapture(imageCaptureConfig.build())
-        binding.imageCapture = imageCapture
-
-        // Create a Vendor Extension for HDR
-        val hdrImageCapture = HdrImageCaptureExtender.create(imageCaptureConfig)
-        // Check if the extension is available on the device
-        if (!hdrImageCapture.isExtensionAvailable) {
-            // If not, hide the HDR button
-            binding.buttonHdr.visibility = View.GONE
-        } else if (hasHdr) {
-            // If yes, turn on if the HDR is turned on by the user
-            hdrImageCapture.enableExtension()
-        }
-
-        // The Configuration for image analyzing
-        val analyzerConfig = ImageAnalysisConfig.Builder().apply {
-            // In our analysis, we care more about the latest image than
-            // analyzing *every* image
-            setImageReaderMode(ImageAnalysis.ImageReaderMode.ACQUIRE_LATEST_IMAGE)
-        }.build()
-
-        // Create an Image Analyzer Use Case instance for luminosity analysis
-        val analyzerUseCase = ImageAnalysis(analyzerConfig).apply {
-            // Use a worker thread for image analysis to prevent glitches
-            val analyzerThread = HandlerThread("LuminosityAnalysis").apply { start() }
-            setAnalyzer(ThreadExecutor(Handler(analyzerThread.looper)), LuminosityAnalyzer())
-        }
-
-        // Check for lens facing to add or not the Image Analyzer Use Case
-        if (lensFacing == CameraX.LensFacing.BACK) {
-            CameraX.bindToLifecycle(viewLifecycleOwner, preview, imageCapture, analyzerUseCase)
-        } else {
-            CameraX.bindToLifecycle(viewLifecycleOwner, preview, imageCapture)
-        }
+    private fun setLastPictureThumbnail() = binding.btnGallery.post {
+        getMedia().firstOrNull() // check if there are any photos or videos in the app directory
+            ?.let { setGalleryThumbnail(it.uri) } // preview the last one
+            ?: binding.btnGallery.setImageResource(R.drawable.ic_no_picture) // or the default placeholder
     }
 
-    private fun getFlashMode() = when (flashMode) {
-        FlashMode.ON.ordinal -> FlashMode.ON
-        FlashMode.AUTO.ordinal -> FlashMode.AUTO
-        else -> FlashMode.OFF
+    /**
+     * Unbinds all the lifecycles from CameraX, then creates new with new parameters
+     * */
+    private fun startCamera() {
+        // This is the CameraX PreviewView where the camera will be rendered
+        val viewFinder = binding.viewFinder
+
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(requireContext())
+        cameraProviderFuture.addListener({
+            cameraProvider = cameraProviderFuture.get()
+
+            // The display information
+            val metrics = DisplayMetrics().also { viewFinder.display.getRealMetrics(it) }
+            // The ratio for the output image and preview
+            val aspectRatio = aspectRatio(metrics.widthPixels, metrics.heightPixels)
+            // The display rotation
+            val rotation = viewFinder.display.rotation
+
+            val localCameraProvider = cameraProvider
+                ?: throw IllegalStateException("Camera initialization failed.")
+
+            // The Configuration of camera preview
+            preview = Preview.Builder()
+                .setTargetAspectRatio(aspectRatio) // set the camera aspect ratio
+                .setTargetRotation(rotation) // set the camera rotation
+                .build()
+
+            // The Configuration of image capture
+            imageCapture = Builder()
+                .setCaptureMode(CAPTURE_MODE_MAXIMIZE_QUALITY) // setting to have pictures with highest quality possible (may be slow)
+                .setFlashMode(flashMode) // set capture flash
+                .setTargetAspectRatio(aspectRatio) // set the capture aspect ratio
+                .setTargetRotation(rotation) // set the capture rotation
+                .also {
+                    // Create a Vendor Extension for HDR
+                    val hdrImageCapture = HdrImageCaptureExtender.create(it)
+
+                    // Check if the extension is available on the device
+                    if (!hdrImageCapture.isExtensionAvailable(lensFacing)) {
+                        // If not, hide the HDR button
+                        binding.btnHdr.visibility = View.GONE
+                    } else if (hasHdr) {
+                        // If yes, turn on if the HDR is turned on by the user
+                        hdrImageCapture.enableExtension(lensFacing)
+                    }
+                }
+                .build()
+
+            // The Configuration of image analyzing
+            imageAnalyzer = ImageAnalysis.Builder()
+                .setTargetAspectRatio(aspectRatio) // set the analyzer aspect ratio
+                .setTargetRotation(rotation) // set the analyzer rotation
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST) // in our analysis, we care about the latest image
+                .build()
+                .apply {
+                    // Use a worker thread for image analysis to prevent glitches
+                    val analyzerThread = HandlerThread("LuminosityAnalysis").apply { start() }
+                    setAnalyzer(
+                        ThreadExecutor(Handler(analyzerThread.looper)),
+                        LuminosityAnalyzer()
+                    )
+                }
+
+            localCameraProvider.unbindAll() // unbind the use-cases before rebinding them
+
+            try {
+                // Bind all use cases to the camera with lifecycle
+                localCameraProvider.bindToLifecycle(
+                    viewLifecycleOwner, // current lifecycle owner
+                    lensFacing, // either front or back facing
+                    preview, // camera preview use case
+                    imageCapture, // image capture use case
+                    imageAnalyzer, // image analyzer use case
+                )
+
+                // Attach the viewfinder's surface provider to preview use case
+                preview?.setSurfaceProvider(viewFinder.surfaceProvider)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to bind use cases", e)
+            }
+
+        }, ContextCompat.getMainExecutor(requireContext()))
+    }
+
+    /**
+     *  Detecting the most suitable aspect ratio for current dimensions
+     *
+     *  @param width - preview width
+     *  @param height - preview height
+     *  @return suitable aspect ratio
+     */
+    private fun aspectRatio(width: Int, height: Int): Int {
+        val previewRatio = max(width, height).toDouble() / min(width, height)
+        if (abs(previewRatio - RATIO_4_3_VALUE) <= abs(previewRatio - RATIO_16_9_VALUE)) {
+            return AspectRatio.RATIO_4_3
+        }
+        return AspectRatio.RATIO_16_9
     }
 
     @Suppress("NON_EXHAUSTIVE_WHEN")
-    fun takePicture(imageCapture: ImageCapture) = lifecycleScope.launch(Dispatchers.Main) {
+    private fun takePicture() = lifecycleScope.launch(Dispatchers.Main) {
         // Show a timer based on user selection
         when (selectedTimer) {
             CameraTimer.S3 -> for (i in 3 downTo 1) {
-                binding.textCountDown.text = i.toString()
+                binding.tvCountDown.text = i.toString()
                 delay(1000)
             }
             CameraTimer.S10 -> for (i in 10 downTo 1) {
-                binding.textCountDown.text = i.toString()
+                binding.tvCountDown.text = i.toString()
                 delay(1000)
             }
         }
-        binding.textCountDown.text = ""
-        captureImage(imageCapture)
+        binding.tvCountDown.text = ""
+        captureImage()
     }
 
-    private fun captureImage(imageCapture: ImageCapture) {
-        // Create the output file
-        val imageFile = File(outputDirectory, "${System.currentTimeMillis()}.jpg")
-        // Capture the image, first parameter is the file where the image should be stored, the second parameter is the callback after taking a photo
-        imageCapture.takePicture(
-            imageFile,
-            requireContext().mainExecutor(),
-            object : ImageCapture.OnImageSavedListener {
-                override fun onImageSaved(file: File) { // the resulting file of taken photo
-                    // Create small preview
-                    setGalleryThumbnail(file)
-                    val msg = "Photo saved in ${file.absolutePath}"
-                    Log.d("CameraXDemo", msg)
-                }
+    private fun captureImage() {
+        val localImageCapture = imageCapture ?: throw IllegalStateException("Camera initialization failed.")
 
-                override fun onError(
-                    imageCaptureError: ImageCapture.ImageCaptureError,
-                    message: String,
-                    cause: Throwable?
-                ) {
-                    // This function is called if there is some error during capture process
-                    val msg = "Photo capture failed: $message"
-                    Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
-                    Log.e("CameraXApp", msg)
-                    cause?.printStackTrace()
-                }
-            })
-    }
-
-    private fun setGalleryThumbnail(file: File) = binding.buttonGallery.let {
-        // Do the work on view's thread, this is needed, because the function is called in a Coroutine Scope's IO Dispatcher
-        it.post {
-            Glide.with(requireContext())
-                .load(file)
-                .apply(RequestOptions.circleCropTransform())
-                .into(it)
+        // Setup image capture metadata
+        val metadata = Metadata().apply {
+            // Mirror image when using the front camera
+            isReversedHorizontal = lensFacing == CameraSelector.DEFAULT_FRONT_CAMERA
         }
+
+        // Options fot the output image file
+        val outputOptions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val contentValues = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, System.currentTimeMillis())
+                put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
+                put(MediaStore.MediaColumns.RELATIVE_PATH, outputDirectory)
+            }
+
+            val contentResolver = requireContext().contentResolver
+
+            // Create the output uri
+            val contentUri = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+
+            OutputFileOptions.Builder(contentResolver, contentUri, contentValues)
+        } else {
+            File(outputDirectory).mkdirs()
+            val file = File(outputDirectory, "${System.currentTimeMillis()}.jpg")
+
+            OutputFileOptions.Builder(file)
+        }.setMetadata(metadata).build()
+
+        localImageCapture.takePicture(
+            outputOptions, // the options needed for the final image
+            requireContext().mainExecutor(), // the executor, on which the task will run
+            object : OnImageSavedCallback { // the callback, about the result of capture process
+                override fun onImageSaved(outputFileResults: OutputFileResults) {
+                    // This function is called if capture is successfully completed
+                    outputFileResults.savedUri
+                        ?.let { uri ->
+                            setGalleryThumbnail(uri)
+                            Log.d(TAG, "Photo saved in $uri")
+                        }
+                        ?: setLastPictureThumbnail()
+                }
+
+                override fun onError(exception: ImageCaptureException) {
+                    // This function is called if there is an errors during capture process
+                    val msg = "Photo capture failed: ${exception.message}"
+                    Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
+                    Log.e(TAG, msg)
+                    exception.printStackTrace()
+                }
+            }
+        )
+    }
+
+    private fun setGalleryThumbnail(savedUri: Uri?) = binding.btnGallery.load(savedUri) {
+        placeholder(R.drawable.ic_no_picture)
+        transformations(CircleCropTransformation())
+        listener(object : ImageRequest.Listener {
+            override fun onError(request: ImageRequest, throwable: Throwable) {
+                super.onError(request, throwable)
+                binding.btnGallery.load(savedUri) {
+                    placeholder(R.drawable.ic_no_picture)
+                    transformations(CircleCropTransformation())
+                    fetcher(VideoFrameUriFetcher(requireContext()))
+                }
+            }
+        })
     }
 
     override fun onDestroyView() {
@@ -398,15 +504,9 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
         displayManager.unregisterDisplayListener(displayListener)
     }
 
-    override fun onBackPressed() {
-        when {
-            binding.layoutTimerOptions.visibility == View.VISIBLE -> binding.layoutTimerOptions.circularClose(
-                binding.buttonTimer
-            )
-            binding.layoutFlashOptions.visibility == View.VISIBLE -> binding.layoutFlashOptions.circularClose(
-                binding.buttonFlash
-            )
-            else -> requireActivity().finish()
-        }
+    override fun onBackPressed() = when {
+        binding.llTimerOptions.visibility == View.VISIBLE -> binding.llTimerOptions.circularClose(binding.btnTimer)
+        binding.llFlashOptions.visibility == View.VISIBLE -> binding.llFlashOptions.circularClose(binding.btnFlash)
+        else -> requireActivity().finish()
     }
 }

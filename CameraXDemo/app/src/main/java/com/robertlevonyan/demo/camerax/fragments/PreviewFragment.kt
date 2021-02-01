@@ -3,66 +3,70 @@ package com.robertlevonyan.demo.camerax.fragments
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import androidx.core.view.WindowInsetsCompat
 import androidx.navigation.Navigation
 import com.robertlevonyan.demo.camerax.R
-import com.robertlevonyan.demo.camerax.adapter.PicturesAdapter
+import com.robertlevonyan.demo.camerax.adapter.MediaAdapter
 import com.robertlevonyan.demo.camerax.databinding.FragmentPreviewBinding
 import com.robertlevonyan.demo.camerax.utils.*
 
 class PreviewFragment : BaseFragment<FragmentPreviewBinding>(R.layout.fragment_preview) {
-    private lateinit var picturesAdapter: PicturesAdapter
+    private val mediaAdapter = MediaAdapter(
+        onItemClick = { isVideo, uri ->
+            if (!isVideo) {
+                val visibility = if (binding.groupPreviewActions.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+                binding.groupPreviewActions.visibility = visibility
+            } else {
+                val play = Intent(Intent.ACTION_VIEW, uri).apply { setDataAndType(uri, "video/mp4") }
+                startActivity(play)
+            }
+        },
+        onDeleteClick = { isEmpty, uri ->
+            if (isEmpty) onBackPressed()
+
+            val resolver = requireContext().applicationContext.contentResolver
+            resolver.delete(uri, null, null)
+        },
+    )
     private var currentPage = 0
+    override val binding: FragmentPreviewBinding by lazy { FragmentPreviewBinding.inflate(layoutInflater) }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        binding.fragment = this // setting the variable for XML
         adjustInsets()
 
         // Check for the permissions and show files
         if (allPermissionsGranted()) {
-            outputDirectory.listFiles()?.let {
-                picturesAdapter = PicturesAdapter(it.toMutableList()) { isVideo, uri ->
-                    if (!isVideo) {
-                        binding.groupPreviewActions.visibility =
-                            if (binding.groupPreviewActions.visibility == View.VISIBLE) View.GONE else View.VISIBLE
-                    } else {
-                        val play = Intent(Intent.ACTION_VIEW, uri).apply { setDataAndType(uri, "video/mp4") }
-                        startActivity(play)
-                    }
-                }
-                binding.pagerPhotos.apply {
-                    adapter = picturesAdapter
-                    onPageSelected { page -> currentPage = page }
-                }
+            binding.pagerPhotos.apply {
+                adapter = mediaAdapter.apply { submitList(getMedia()) }
+                onPageSelected { page -> currentPage = page }
             }
         }
+
+        binding.btnBack.setOnClickListener { onBackPressed() }
+        binding.btnShare.setOnClickListener { shareImage() }
+        binding.btnDelete.setOnClickListener { deleteImage() }
     }
 
     /**
      * This methods adds all necessary margins to some views based on window insets and screen orientation
      * */
     private fun adjustInsets() {
-        binding.layoutRoot.fitSystemWindows()
-        binding.imageBack.onWindowInsets { view, windowInsets ->
-            view.topMargin = windowInsets.systemWindowInsetTop
+        activity?.window?.fitSystemWindows()
+        binding.btnBack.onWindowInsets { view, windowInsets ->
+            view.topMargin = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()).top
         }
-        binding.imageShare.onWindowInsets { view, windowInsets ->
-            view.bottomMargin = windowInsets.systemWindowInsetBottom
+        binding.btnShare.onWindowInsets { view, windowInsets ->
+            view.bottomMargin = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom
         }
     }
 
-    fun shareImage() {
-        if (!::picturesAdapter.isInitialized) return
-
-        picturesAdapter.shareImage(currentPage) { share(it) }
+    private fun shareImage() {
+        mediaAdapter.shareImage(currentPage) { share(it) }
     }
 
-    fun deleteImage() {
-        if (!::picturesAdapter.isInitialized) return
-
-        picturesAdapter.deleteImage(currentPage) {
-            if (outputDirectory.listFiles().isNullOrEmpty()) onBackPressed()
-        }
+    private fun deleteImage() {
+        mediaAdapter.deleteImage(currentPage)
     }
 
     override fun onBackPressed() {

@@ -5,7 +5,6 @@ import android.animation.AnimatorListenerAdapter
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
-import android.net.Uri
 import android.os.Build
 import android.view.*
 import android.view.View.*
@@ -13,13 +12,16 @@ import android.widget.ImageButton
 import androidx.annotation.DrawableRes
 import androidx.core.animation.doOnEnd
 import androidx.core.animation.doOnStart
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.widget.ViewPager2
+import com.robertlevonyan.demo.camerax.adapter.Media
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.io.File
 import java.util.concurrent.Executor
 
 fun ImageButton.toggleButton(
@@ -84,23 +86,22 @@ fun ViewGroup.circularClose(button: ImageButton, action: () -> Unit = {}) {
     }.start()
 }
 
-fun View.onWindowInsets(action: (View, WindowInsets) -> Unit) {
-    this.requestApplyInsets()
-    this.setOnApplyWindowInsetsListener { v, insets ->
+fun View.onWindowInsets(action: (View, WindowInsetsCompat) -> Unit) {
+    ViewCompat.requestApplyInsets(this)
+    ViewCompat.setOnApplyWindowInsetsListener(this) { v, insets ->
         action(v, insets)
         insets
     }
 }
 
-fun View.fitSystemWindows() {
-    systemUiVisibility =
-        SYSTEM_UI_FLAG_LAYOUT_STABLE or SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+fun Window.fitSystemWindows() {
+    WindowCompat.setDecorFitsSystemWindows(this, false)
 }
 
-fun Fragment.share(file: File, title: String = "Share with...") {
+fun Fragment.share(media: Media, title: String = "Share with...") {
     val share = Intent(Intent.ACTION_SEND)
     share.type = "image/*"
-    share.putExtra(Intent.EXTRA_STREAM, Uri.parse(file.absolutePath))
+    share.putExtra(Intent.EXTRA_STREAM, media.uri)
     startActivity(Intent.createChooser(share, title))
 }
 
@@ -135,14 +136,6 @@ var View.bottomMargin: Int
     set(value) {
         val params = this.layoutParams as ViewGroup.MarginLayoutParams
         params.bottomMargin = value
-        this.layoutParams = params
-    }
-
-var View.startMargin: Int
-    get() = (this.layoutParams as ViewGroup.MarginLayoutParams).marginStart
-    set(value) {
-        val params = this.layoutParams as ViewGroup.MarginLayoutParams
-        params.marginStart = value
         this.layoutParams = params
     }
 
