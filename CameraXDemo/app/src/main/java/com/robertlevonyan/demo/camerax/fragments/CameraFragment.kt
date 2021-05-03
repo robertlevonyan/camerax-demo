@@ -37,6 +37,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
+import java.util.concurrent.ExecutionException
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -322,7 +323,15 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
 
         val cameraProviderFuture = ProcessCameraProvider.getInstance(requireContext())
         cameraProviderFuture.addListener({
-            cameraProvider = cameraProviderFuture.get()
+            try {
+                cameraProvider = cameraProviderFuture.get()
+            } catch (e: InterruptedException) {
+                Toast.makeText(requireContext(), "Error starting camera", Toast.LENGTH_SHORT).show()
+                return@addListener
+            } catch (e: ExecutionException) {
+                Toast.makeText(requireContext(), "Error starting camera", Toast.LENGTH_SHORT).show()
+                return@addListener
+            }
 
             // The display information
             val metrics = DisplayMetrics().also { viewFinder.display.getRealMetrics(it) }
