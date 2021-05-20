@@ -35,7 +35,7 @@ abstract class BaseFragment<B : ViewBinding>(private val fragmentLayout: Int) : 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             "${Environment.DIRECTORY_DCIM}/CameraXDemo/"
         } else {
-            "${requireContext().getExternalFilesDir(Environment.DIRECTORY_DCIM)?.path}/CameraXDemo/"
+            "${Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)}/CameraXDemo/"
         }
     }
 

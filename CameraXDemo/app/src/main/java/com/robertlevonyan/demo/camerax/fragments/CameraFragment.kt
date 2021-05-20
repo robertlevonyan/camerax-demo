@@ -103,7 +103,7 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
         override fun onDisplayAdded(displayId: Int) = Unit
         override fun onDisplayRemoved(displayId: Int) = Unit
 
-        @SuppressLint("UnsafeExperimentalUsageError")
+        @SuppressLint("UnsafeExperimentalUsageError", "UnsafeOptInUsageError")
         override fun onDisplayChanged(displayId: Int) = view?.let { view ->
             if (displayId == this@CameraFragment.displayId) {
                 preview?.targetRotation = view.display.rotation

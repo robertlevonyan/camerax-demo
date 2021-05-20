@@ -104,7 +104,7 @@ class VideoFragment : BaseFragment<FragmentVideoBinding>(R.layout.fragment_video
         override fun onDisplayAdded(displayId: Int) = Unit
         override fun onDisplayRemoved(displayId: Int) = Unit
 
-        @SuppressLint("UnsafeExperimentalUsageError")
+        @SuppressLint("UnsafeExperimentalUsageError", "UnsafeOptInUsageError")
         override fun onDisplayChanged(displayId: Int) = view?.let { view ->
             if (displayId == this@VideoFragment.displayId) {
                 preview?.targetRotation = view.display.rotation
@@ -271,6 +271,7 @@ class VideoFragment : BaseFragment<FragmentVideoBinding>(R.layout.fragment_video
         view?.let { Navigation.findNavController(it).navigate(R.id.action_video_to_preview) }
     }
 
+    @SuppressLint("MissingPermission")
     private fun recordVideo() {
         val localVideoCapture = videoCapture ?: throw IllegalStateException("Camera initialization failed.")
 
