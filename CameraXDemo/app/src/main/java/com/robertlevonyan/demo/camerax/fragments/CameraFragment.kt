@@ -44,17 +44,6 @@ import kotlin.math.min
 import kotlin.properties.Delegates
 
 class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_camera) {
-    companion object {
-        private const val TAG = "CameraXDemo"
-
-        const val KEY_FLASH = "sPrefFlashCamera"
-        const val KEY_GRID = "sPrefGridCamera"
-        const val KEY_HDR = "sPrefHDR"
-
-        private const val RATIO_4_3_VALUE = 4.0 / 3.0 // aspect ratio 4x3
-        private const val RATIO_16_9_VALUE = 16.0 / 9.0 // aspect ratio 16x9
-    }
-
     // An instance for display manager to get display change callbacks
     private val displayManager by lazy { requireContext().getSystemService(Context.DISPLAY_SERVICE) as DisplayManager }
 
@@ -517,5 +506,16 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
         binding.llTimerOptions.visibility == View.VISIBLE -> binding.llTimerOptions.circularClose(binding.btnTimer)
         binding.llFlashOptions.visibility == View.VISIBLE -> binding.llFlashOptions.circularClose(binding.btnFlash)
         else -> requireActivity().finish()
+    }
+
+    companion object {
+        private const val TAG = "CameraXDemo"
+
+        const val KEY_FLASH = "sPrefFlashCamera"
+        const val KEY_GRID = "sPrefGridCamera"
+        const val KEY_HDR = "sPrefHDR"
+
+        private const val RATIO_4_3_VALUE = 4.0 / 3.0 // aspect ratio 4x3
+        private const val RATIO_16_9_VALUE = 16.0 / 9.0 // aspect ratio 16x9
     }
 }
