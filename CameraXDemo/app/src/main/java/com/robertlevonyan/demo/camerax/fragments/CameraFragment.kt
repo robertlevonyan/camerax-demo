@@ -6,10 +6,7 @@ import android.content.Context
 import android.content.res.Configuration
 import android.hardware.display.DisplayManager
 import android.net.Uri
-import android.os.Build
-import android.os.Bundle
-import android.os.Handler
-import android.os.HandlerThread
+import android.os.*
 import android.provider.MediaStore
 import android.util.DisplayMetrics
 import android.util.Log
@@ -435,7 +432,7 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
             // Mirror image when using the front camera
             isReversedHorizontal = lensFacing == CameraSelector.DEFAULT_FRONT_CAMERA
         }
-
+        MediaStore.Images.Media.EXTERNAL_CONTENT_URI
         // Options fot the output image file
         val outputOptions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val contentValues = ContentValues().apply {
