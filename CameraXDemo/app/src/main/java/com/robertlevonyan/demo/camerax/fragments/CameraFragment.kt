@@ -15,8 +15,10 @@ import android.view.View
 import android.widget.Toast
 import androidx.camera.core.*
 import androidx.camera.core.ImageCapture.*
-import androidx.camera.extensions.HdrImageCaptureExtender
+import androidx.camera.extensions.ExtensionMode
+import androidx.camera.extensions.ExtensionsManager
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
@@ -341,19 +343,7 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
                 .setFlashMode(flashMode) // set capture flash
                 .setTargetAspectRatio(aspectRatio) // set the capture aspect ratio
                 .setTargetRotation(rotation) // set the capture rotation
-                .also {
-                    // Create a Vendor Extension for HDR
-                    val hdrImageCapture = HdrImageCaptureExtender.create(it)
-
-                    // Check if the extension is available on the device
-                    if (!hdrImageCapture.isExtensionAvailable(lensFacing)) {
-                        // If not, hide the HDR button
-                        binding.btnHdr.visibility = View.GONE
-                    } else if (hasHdr) {
-                        // If yes, turn on if the HDR is turned on by the user
-                        hdrImageCapture.enableExtension(lensFacing)
-                    }
-                }
+                .also { checkForHdrExtensionAvailability() }
                 .build()
 
             // The Configuration of image analyzing
@@ -362,34 +352,71 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
                 .setTargetRotation(rotation) // set the analyzer rotation
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST) // in our analysis, we care about the latest image
                 .build()
-                .apply {
-                    // Use a worker thread for image analysis to prevent glitches
-                    val analyzerThread = HandlerThread("LuminosityAnalysis").apply { start() }
-                    setAnalyzer(
-                        ThreadExecutor(Handler(analyzerThread.looper)),
-                        LuminosityAnalyzer()
-                    )
-                }
+                .also { setLuminosityAnalyzer(it) }
 
-            localCameraProvider.unbindAll() // unbind the use-cases before rebinding them
-
-            try {
-                // Bind all use cases to the camera with lifecycle
-                localCameraProvider.bindToLifecycle(
-                    viewLifecycleOwner, // current lifecycle owner
-                    lensFacing, // either front or back facing
-                    preview, // camera preview use case
-                    imageCapture, // image capture use case
-                    imageAnalyzer, // image analyzer use case
-                )
-
-                // Attach the viewfinder's surface provider to preview use case
-                preview?.setSurfaceProvider(viewFinder.surfaceProvider)
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to bind use cases", e)
-            }
-
+            // Unbind the use-cases before rebinding them
+            localCameraProvider.unbindAll()
+            // Bind all use cases to the camera with lifecycle
+            bindToLifecycle(localCameraProvider, viewFinder)
         }, ContextCompat.getMainExecutor(requireContext()))
+    }
+
+    private fun checkForHdrExtensionAvailability() {
+        // Create a Vendor Extension for HDR
+        val extensionsManagerFuture = ExtensionsManager.getInstance(requireContext())
+        extensionsManagerFuture.addListener(
+            {
+                val extensionsManager = extensionsManagerFuture.get() ?: return@addListener
+                val cameraProvider = cameraProvider ?: return@addListener
+
+                val isAvailable = extensionsManager.isExtensionAvailable(cameraProvider, lensFacing, ExtensionMode.HDR)
+
+                // check for any extension availability
+                println("AUTO " + extensionsManager.isExtensionAvailable(cameraProvider, lensFacing, ExtensionMode.AUTO))
+                println("HDR " + extensionsManager.isExtensionAvailable(cameraProvider, lensFacing, ExtensionMode.HDR))
+                println("BEAUTY " + extensionsManager.isExtensionAvailable(cameraProvider, lensFacing, ExtensionMode.BEAUTY))
+                println("BOKEH " + extensionsManager.isExtensionAvailable(cameraProvider, lensFacing, ExtensionMode.BOKEH))
+                println("NIGHT " + extensionsManager.isExtensionAvailable(cameraProvider, lensFacing, ExtensionMode.NIGHT))
+                println("NONE " + extensionsManager.isExtensionAvailable(cameraProvider, lensFacing, ExtensionMode.NONE))
+
+                // Check if the extension is available on the device
+                if (!isAvailable) {
+                    // If not, hide the HDR button
+                    binding.btnHdr.visibility = View.GONE
+                } else if (hasHdr) {
+                    // If yes, turn on if the HDR is turned on by the user
+                    binding.btnHdr.visibility = View.VISIBLE
+                    extensionsManager.getExtensionEnabledCameraSelector(cameraProvider, lensFacing, ExtensionMode.HDR)
+                }
+            },
+            ContextCompat.getMainExecutor(requireContext())
+        )
+    }
+
+    private fun setLuminosityAnalyzer(imageAnalysis: ImageAnalysis) {
+        // Use a worker thread for image analysis to prevent glitches
+        val analyzerThread = HandlerThread("LuminosityAnalysis").apply { start() }
+        imageAnalysis.setAnalyzer(
+            ThreadExecutor(Handler(analyzerThread.looper)),
+            LuminosityAnalyzer()
+        )
+    }
+
+    private fun bindToLifecycle(localCameraProvider: ProcessCameraProvider, viewFinder: PreviewView) {
+        try {
+            localCameraProvider.bindToLifecycle(
+                viewLifecycleOwner, // current lifecycle owner
+                lensFacing, // either front or back facing
+                preview, // camera preview use case
+                imageCapture, // image capture use case
+                imageAnalyzer, // image analyzer use case
+            )
+
+            // Attach the viewfinder's surface provider to preview use case
+            preview?.setSurfaceProvider(viewFinder.surfaceProvider)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to bind use cases", e)
+        }
     }
 
     /**
