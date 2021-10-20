@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:animateLayoutChanges="true"
     android:background="@android:color/black"
     tools:context=".fragments.CameraFragment">
 
@@ -131,9 +132,24 @@
         android:padding="@dimen/half_margin"
         android:scaleType="centerInside"
         android:src="@drawable/ic_hdr_off"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/btnExposure"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toEndOf="@+id/btnFlash"
+        app:layout_constraintTop_toTopOf="@id/btnFlash"
+        tools:ignore="ContentDescription" />
+
+    <ImageButton
+        android:id="@+id/btnExposure"
+        android:layout_width="@dimen/button_size_small"
+        android:layout_height="@dimen/button_size_small"
+        android:background="@android:color/transparent"
+        android:elevation="1dp"
+        android:padding="@dimen/half_margin"
+        android:scaleType="centerInside"
+        android:src="@drawable/ic_exposure"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toEndOf="@+id/btnHdr"
         app:layout_constraintTop_toTopOf="@id/btnFlash"
         tools:ignore="ContentDescription" />
 
@@ -283,6 +299,33 @@
             android:src="@drawable/ic_flash_on"
             tools:ignore="ContentDescription" />
     </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/flExposure"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:elevation="3dp"
+        android:orientation="horizontal"
+        android:padding="@dimen/double_margin"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/sliderExposure"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_margin="@dimen/fab_margin"
+            android:background="@drawable/bg_options"
+            android:paddingHorizontal="@dimen/fab_margin"
+            android:paddingVertical="@dimen/double_margin"
+            android:progressBackgroundTint="@android:color/white"
+            app:haloColor="@color/colorAccent"
+            app:thumbColor="@color/colorAccent" />
+    </FrameLayout>
 
     <TextView
         android:id="@+id/tvCountDown"

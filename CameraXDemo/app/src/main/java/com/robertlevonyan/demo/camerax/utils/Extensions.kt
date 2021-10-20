@@ -15,6 +15,7 @@ import androidx.core.animation.doOnStart
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.widget.ViewPager2
 import com.robertlevonyan.demo.camerax.adapter.Media
@@ -60,7 +61,6 @@ fun ImageButton.toggleButton(
 }
 
 fun ViewGroup.circularReveal(button: ImageButton) {
-    this.visibility = View.VISIBLE
     ViewAnimationUtils.createCircularReveal(
         this,
         button.x.toInt() + button.width / 2,
@@ -69,6 +69,7 @@ fun ViewGroup.circularReveal(button: ImageButton) {
         if (button.context.resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) this.width.toFloat() else this.height.toFloat()
     ).apply {
         duration = 500
+        doOnStart { visibility = VISIBLE }
     }.start()
 }
 
@@ -82,7 +83,7 @@ fun ViewGroup.circularClose(button: ImageButton, action: () -> Unit = {}) {
     ).apply {
         duration = 500
         doOnStart { action() }
-        doOnEnd { this@circularClose.visibility = View.GONE }
+        doOnEnd { visibility = GONE }
     }.start()
 }
 
@@ -126,23 +127,35 @@ val Context.layoutInflater: LayoutInflater
 var View.topMargin: Int
     get() = (this.layoutParams as ViewGroup.MarginLayoutParams).topMargin
     set(value) {
-        val params = this.layoutParams as ViewGroup.MarginLayoutParams
-        params.topMargin = value
-        this.layoutParams = params
+        updateLayoutParams<ViewGroup.MarginLayoutParams> { topMargin = value }
+    }
+
+var View.topPadding: Int
+    get() = paddingTop
+    set(value) {
+        updateLayoutParams { setPaddingRelative(paddingStart, value, paddingEnd, paddingBottom) }
     }
 
 var View.bottomMargin: Int
     get() = (this.layoutParams as ViewGroup.MarginLayoutParams).bottomMargin
     set(value) {
-        val params = this.layoutParams as ViewGroup.MarginLayoutParams
-        params.bottomMargin = value
-        this.layoutParams = params
+        updateLayoutParams<ViewGroup.MarginLayoutParams> { bottomMargin = value }
     }
 
 var View.endMargin: Int
     get() = (this.layoutParams as ViewGroup.MarginLayoutParams).marginEnd
     set(value) {
-        val params = this.layoutParams as ViewGroup.MarginLayoutParams
-        params.marginEnd = value
-        this.layoutParams = params
+        updateLayoutParams<ViewGroup.MarginLayoutParams> { marginEnd = value }
+    }
+
+var View.startMargin: Int
+    get() = (this.layoutParams as ViewGroup.MarginLayoutParams).marginStart
+    set(value) {
+        updateLayoutParams<ViewGroup.MarginLayoutParams> { marginStart = value }
+    }
+
+var View.startPadding: Int
+    get() = paddingStart
+    set(value) {
+        updateLayoutParams { setPaddingRelative(value, paddingTop, paddingEnd, paddingBottom) }
     }

@@ -120,6 +120,7 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
                 override fun onViewAttachedToWindow(v: View) =
                     displayManager.unregisterDisplayListener(displayListener)
             })
+
             btnTakePicture.setOnClickListener { takePicture() }
             btnGallery.setOnClickListener { openPreview() }
             btnSwitchCamera.setOnClickListener { toggleCamera() }
@@ -133,6 +134,8 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
             btnFlashOff.setOnClickListener { closeFlashAndSelect(FLASH_MODE_OFF) }
             btnFlashOn.setOnClickListener { closeFlashAndSelect(FLASH_MODE_ON) }
             btnFlashAuto.setOnClickListener { closeFlashAndSelect(FLASH_MODE_AUTO) }
+            btnExposure.setOnClickListener { flExposure.visibility = View.VISIBLE }
+            flExposure.setOnClickListener { flExposure.visibility = View.GONE }
 
             // This swipe gesture adds a fun gesture to switch between video and photo
             val swipeGestures = SwipeGestureDetector().apply {
@@ -163,13 +166,33 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
     private fun adjustInsets() {
         activity?.window?.fitSystemWindows()
         binding.btnTakePicture.onWindowInsets { view, windowInsets ->
-            if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT)
+            if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
                 view.bottomMargin =
                     windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom
-            else view.endMargin = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()).right
+            } else {
+                view.endMargin = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()).right
+            }
         }
         binding.btnTimer.onWindowInsets { view, windowInsets ->
             view.topMargin = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()).top
+        }
+        binding.llTimerOptions.onWindowInsets { view, windowInsets ->
+            if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
+                view.topPadding =
+                    windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()).top
+            } else {
+                view.startPadding =
+                    windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()).left
+            }
+        }
+        binding.llFlashOptions.onWindowInsets { view, windowInsets ->
+            if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
+                view.topPadding =
+                    windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()).top
+            } else {
+                view.startPadding =
+                    windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()).left
+            }
         }
     }
 
@@ -374,7 +397,7 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
                 // check for any extension availability
                 println("AUTO " + extensionsManager.isExtensionAvailable(cameraProvider, lensFacing, ExtensionMode.AUTO))
                 println("HDR " + extensionsManager.isExtensionAvailable(cameraProvider, lensFacing, ExtensionMode.HDR))
-                println("BEAUTY " + extensionsManager.isExtensionAvailable(cameraProvider, lensFacing, ExtensionMode.BEAUTY))
+                println("FACE RETOUCH " + extensionsManager.isExtensionAvailable(cameraProvider, lensFacing, ExtensionMode.FACE_RETOUCH))
                 println("BOKEH " + extensionsManager.isExtensionAvailable(cameraProvider, lensFacing, ExtensionMode.BOKEH))
                 println("NIGHT " + extensionsManager.isExtensionAvailable(cameraProvider, lensFacing, ExtensionMode.NIGHT))
                 println("NONE " + extensionsManager.isExtensionAvailable(cameraProvider, lensFacing, ExtensionMode.NONE))
@@ -410,7 +433,25 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
                 preview, // camera preview use case
                 imageCapture, // image capture use case
                 imageAnalyzer, // image analyzer use case
-            )
+            ).run {
+
+                // Init camera exposure control
+                cameraInfo.exposureState.run {
+                    val lower = exposureCompensationRange.lower
+                    val upper = exposureCompensationRange.upper
+
+                    binding.sliderExposure.run {
+                        valueFrom = lower.toFloat()
+                        valueTo = upper.toFloat()
+                        stepSize = 1f
+                        value = exposureCompensationIndex.toFloat()
+
+                        addOnChangeListener { _, value, _ ->
+                            cameraControl.setExposureCompensationIndex(value.toInt())
+                        }
+                    }
+                }
+            }
 
             // Attach the viewfinder's surface provider to preview use case
             preview?.setSurfaceProvider(viewFinder.surfaceProvider)
