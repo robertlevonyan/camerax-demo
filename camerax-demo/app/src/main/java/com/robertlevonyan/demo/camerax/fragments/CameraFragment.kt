@@ -61,6 +61,7 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
 
     // Selector showing which camera is selected (front or back)
     private var lensFacing = CameraSelector.DEFAULT_BACK_CAMERA
+    private var hdrCameraSelector: CameraSelector? = null
 
     // Selector showing which flash mode is selected (on, off or auto)
     private var flashMode by Delegates.observable(FLASH_MODE_OFF) { _, _, new ->
@@ -366,8 +367,9 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
                 .setFlashMode(flashMode) // set capture flash
                 .setTargetAspectRatio(aspectRatio) // set the capture aspect ratio
                 .setTargetRotation(rotation) // set the capture rotation
-                .also { checkForHdrExtensionAvailability() }
                 .build()
+
+            checkForHdrExtensionAvailability()
 
             // The Configuration of image analyzing
             imageAnalyzer = ImageAnalysis.Builder()
@@ -409,7 +411,8 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
                 } else if (hasHdr) {
                     // If yes, turn on if the HDR is turned on by the user
                     binding.btnHdr.visibility = View.VISIBLE
-                    extensionsManager.getExtensionEnabledCameraSelector(cameraProvider, lensFacing, ExtensionMode.HDR)
+                    hdrCameraSelector =
+                        extensionsManager.getExtensionEnabledCameraSelector(cameraProvider, lensFacing, ExtensionMode.HDR)
                 }
             },
             ContextCompat.getMainExecutor(requireContext())
@@ -429,12 +432,11 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
         try {
             localCameraProvider.bindToLifecycle(
                 viewLifecycleOwner, // current lifecycle owner
-                lensFacing, // either front or back facing
+                hdrCameraSelector ?: lensFacing, // either front or back facing
                 preview, // camera preview use case
                 imageCapture, // image capture use case
                 imageAnalyzer, // image analyzer use case
             ).run {
-
                 // Init camera exposure control
                 cameraInfo.exposureState.run {
                     val lower = exposureCompensationRange.lower
