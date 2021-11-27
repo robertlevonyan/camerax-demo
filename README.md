@@ -1,4 +1,4 @@
-# <img src="https://github.com/robertlevonyan/camerax-demo/blob/master/CameraXDemo/app/src/main/ic_launcher-web.png"  width="50" height="50" /> &nbsp;&nbsp;&nbsp; Camera X Demo
+# <img src="https://github.com/robertlevonyan/camerax-demo/blob/master/camerax-demo/app/src/main/ic_launcher-web.png"  width="50" height="50" /> &nbsp;&nbsp;&nbsp; Camera X Demo
 
 |A demo camera application created with Android Jetpack CameraX API|<img src="https://github.com/robertlevonyan/camerax-demo/blob/master/media/camerax.png"  width="450" />|
 |----------------------------------------------------------------------------------------------|-----------|
@@ -24,6 +24,10 @@
 - **Twitter**: https://twitter.com/@RobertLevonyan
 - **Facebook**: https://facebook.com/robert.levonyan
 - **Google Play**: https://play.google.com/store/apps/dev?id=5477562049350283357
+
+<a href="https://www.buymeacoffee.com/robertlevonyan">
+  <img src="https://github.com/robertlevonyan/camerax-demo/blob/master/media/coffee.jpeg"  width="300" />
+</a>
 
 ## Licence
 
