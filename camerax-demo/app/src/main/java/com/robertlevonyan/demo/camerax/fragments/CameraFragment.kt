@@ -6,7 +6,10 @@ import android.content.Context
 import android.content.res.Configuration
 import android.hardware.display.DisplayManager
 import android.net.Uri
-import android.os.*
+import android.os.Build
+import android.os.Bundle
+import android.os.Handler
+import android.os.HandlerThread
 import android.provider.MediaStore
 import android.util.DisplayMetrics
 import android.util.Log
@@ -388,21 +391,23 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
 
     private fun checkForHdrExtensionAvailability() {
         // Create a Vendor Extension for HDR
-        val extensionsManagerFuture = ExtensionsManager.getInstance(requireContext())
+        val extensionsManagerFuture = ExtensionsManager.getInstanceAsync(
+            requireContext(), cameraProvider ?: return,
+        )
         extensionsManagerFuture.addListener(
             {
                 val extensionsManager = extensionsManagerFuture.get() ?: return@addListener
                 val cameraProvider = cameraProvider ?: return@addListener
 
-                val isAvailable = extensionsManager.isExtensionAvailable(cameraProvider, lensFacing, ExtensionMode.HDR)
+                val isAvailable = extensionsManager.isExtensionAvailable(lensFacing, ExtensionMode.HDR)
 
                 // check for any extension availability
-                println("AUTO " + extensionsManager.isExtensionAvailable(cameraProvider, lensFacing, ExtensionMode.AUTO))
-                println("HDR " + extensionsManager.isExtensionAvailable(cameraProvider, lensFacing, ExtensionMode.HDR))
-                println("FACE RETOUCH " + extensionsManager.isExtensionAvailable(cameraProvider, lensFacing, ExtensionMode.FACE_RETOUCH))
-                println("BOKEH " + extensionsManager.isExtensionAvailable(cameraProvider, lensFacing, ExtensionMode.BOKEH))
-                println("NIGHT " + extensionsManager.isExtensionAvailable(cameraProvider, lensFacing, ExtensionMode.NIGHT))
-                println("NONE " + extensionsManager.isExtensionAvailable(cameraProvider, lensFacing, ExtensionMode.NONE))
+                println("AUTO " + extensionsManager.isExtensionAvailable(lensFacing, ExtensionMode.AUTO))
+                println("HDR " + extensionsManager.isExtensionAvailable(lensFacing, ExtensionMode.HDR))
+                println("FACE RETOUCH " + extensionsManager.isExtensionAvailable(lensFacing, ExtensionMode.FACE_RETOUCH))
+                println("BOKEH " + extensionsManager.isExtensionAvailable(lensFacing, ExtensionMode.BOKEH))
+                println("NIGHT " + extensionsManager.isExtensionAvailable(lensFacing, ExtensionMode.NIGHT))
+                println("NONE " + extensionsManager.isExtensionAvailable(lensFacing, ExtensionMode.NONE))
 
                 // Check if the extension is available on the device
                 if (!isAvailable) {
@@ -412,7 +417,7 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
                     // If yes, turn on if the HDR is turned on by the user
                     binding.btnHdr.visibility = View.VISIBLE
                     hdrCameraSelector =
-                        extensionsManager.getExtensionEnabledCameraSelector(cameraProvider, lensFacing, ExtensionMode.HDR)
+                        extensionsManager.getExtensionEnabledCameraSelector(lensFacing, ExtensionMode.HDR)
                 }
             },
             ContextCompat.getMainExecutor(requireContext())
