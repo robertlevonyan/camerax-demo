@@ -11,12 +11,10 @@
 /build
 /captures
 .externalNativeBuild
-/gradle/wrapper/gradle-wrapper.properties
 /gradlew
 /gradlew.bat
 /.idea/compiler.xml
 /.idea/gradle.xml
-/gradle/wrapper/gradle-wrapper.jar
 /.idea/jarRepositories.xml
 /.idea/misc.xml
 /.idea/vcs.xml
