@@ -26,8 +26,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
-import coil.fetch.VideoFrameUriFetcher
 import coil.load
+import coil.request.ErrorResult
 import coil.request.ImageRequest
 import coil.transform.CircleCropTransformation
 import com.robertlevonyan.demo.camerax.R
@@ -494,6 +494,7 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
                 binding.tvCountDown.text = i.toString()
                 delay(1000)
             }
+            CameraTimer.OFF -> {}
         }
         binding.tvCountDown.text = ""
         captureImage()
@@ -558,12 +559,12 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(R.layout.fragment_cam
         placeholder(R.drawable.ic_no_picture)
         transformations(CircleCropTransformation())
         listener(object : ImageRequest.Listener {
-            override fun onError(request: ImageRequest, throwable: Throwable) {
-                super.onError(request, throwable)
+            override fun onError(request: ImageRequest, result: ErrorResult) {
+                super.onError(request, result)
                 binding.btnGallery.load(savedUri) {
                     placeholder(R.drawable.ic_no_picture)
                     transformations(CircleCropTransformation())
-                    fetcher(VideoFrameUriFetcher(requireContext()))
+//                    fetcher(VideoFrameUriFetcher(requireContext()))
                 }
             }
         })

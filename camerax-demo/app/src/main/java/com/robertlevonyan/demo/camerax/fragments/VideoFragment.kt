@@ -5,9 +5,10 @@ import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Context
 import android.content.res.Configuration
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraMetadata
 import android.hardware.display.DisplayManager
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.DisplayMetrics
@@ -15,15 +16,18 @@ import android.util.Log
 import android.view.GestureDetector
 import android.view.View
 import android.widget.Toast
+import androidx.camera.camera2.interop.Camera2CameraInfo
+import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.video.*
 import androidx.core.animation.doOnCancel
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
-import coil.fetch.VideoFrameUriFetcher
 import coil.load
+import coil.request.ErrorResult
 import coil.request.ImageRequest
 import coil.transform.CircleCropTransformation
 import com.robertlevonyan.demo.camerax.R
@@ -31,13 +35,13 @@ import com.robertlevonyan.demo.camerax.databinding.FragmentVideoBinding
 import com.robertlevonyan.demo.camerax.utils.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.io.File
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.properties.Delegates
 
 
+@ExperimentalCamera2Interop
 @SuppressLint("RestrictedApi")
 class VideoFragment : BaseFragment<FragmentVideoBinding>(R.layout.fragment_video) {
     // An instance for display manager to get display change callbacks
@@ -49,7 +53,7 @@ class VideoFragment : BaseFragment<FragmentVideoBinding>(R.layout.fragment_video
     private var camera: Camera? = null
     private var cameraProvider: ProcessCameraProvider? = null
     private var preview: Preview? = null
-    private var videoCapture: VideoCapture? = null
+    private var videoCapture: VideoCapture<Recorder>? = null
 
     private var displayId = -1
 
@@ -99,7 +103,7 @@ class VideoFragment : BaseFragment<FragmentVideoBinding>(R.layout.fragment_video
         override fun onDisplayChanged(displayId: Int) = view?.let { view ->
             if (displayId == this@VideoFragment.displayId) {
                 preview?.targetRotation = view.display.rotation
-                videoCapture?.setTargetRotation(view.display.rotation)
+                videoCapture?.targetRotation = view.display.rotation
             }
         } ?: Unit
     }
@@ -215,11 +219,21 @@ class VideoFragment : BaseFragment<FragmentVideoBinding>(R.layout.fragment_video
                 .setTargetRotation(rotation) // set the camera rotation
                 .build()
 
-            val videoCaptureConfig = VideoCapture.DEFAULT_CONFIG.config // default config for video capture
-            // The Configuration of video capture
-            videoCapture = VideoCapture.Builder
-                .fromConfig(videoCaptureConfig)
+            val cameraInfo = localCameraProvider.availableCameraInfos.filter {
+                Camera2CameraInfo
+                    .from(it)
+                    .getCameraCharacteristic(CameraCharacteristics.LENS_FACING) == CameraMetadata.LENS_FACING_BACK
+            }
+
+            val supportedQualities = QualitySelector.getSupportedQualities(cameraInfo[0])
+            val qualitySelector = QualitySelector.fromOrderedList(
+                listOf(Quality.UHD, Quality.FHD, Quality.HD, Quality.SD),
+                FallbackStrategy.lowerQualityOrHigherThan(Quality.SD)
+            )
+            val recorder = Recorder.Builder()
+                .setExecutor(ContextCompat.getMainExecutor(requireContext())).setQualitySelector(qualitySelector)
                 .build()
+            videoCapture = VideoCapture.withOutput(recorder)
 
             localCameraProvider.unbindAll() // unbind the use-cases before rebinding them
 
@@ -262,59 +276,48 @@ class VideoFragment : BaseFragment<FragmentVideoBinding>(R.layout.fragment_video
         view?.let { Navigation.findNavController(it).navigate(R.id.action_video_to_preview) }
     }
 
+    var recording: Recording? = null
+
     @SuppressLint("MissingPermission")
     private fun recordVideo() {
-        val localVideoCapture = videoCapture ?: throw IllegalStateException("Camera initialization failed.")
-
-        // Options fot the output video file
-        val outputOptions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val contentValues = ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, System.currentTimeMillis())
-                put(MediaStore.MediaColumns.MIME_TYPE, "video/mp4")
-                put(MediaStore.MediaColumns.RELATIVE_PATH, outputDirectory)
-            }
-
-            requireContext().contentResolver.run {
-                val contentUri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
-
-                VideoCapture.OutputFileOptions.Builder(this, contentUri, contentValues)
-            }
-        } else {
-            File(outputDirectory).mkdirs()
-            val file = File("$outputDirectory/${System.currentTimeMillis()}.mp4")
-
-            VideoCapture.OutputFileOptions.Builder(file)
-        }.build()
-
-        if (!isRecording) {
-            animateRecord.start()
-            localVideoCapture.startRecording(
-                outputOptions, // the options needed for the final video
-                requireContext().mainExecutor(), // the executor, on which the task will run
-                object : VideoCapture.OnVideoSavedCallback { // the callback after recording a video
-                    override fun onVideoSaved(outputFileResults: VideoCapture.OutputFileResults) {
-                        // Create small preview
-                        outputFileResults.savedUri
-                            ?.let { uri ->
-                                setGalleryThumbnail(uri)
-                                Log.d(TAG, "Video saved in $uri")
-                            }
-                            ?: setLastPictureThumbnail()
-                    }
-
-                    override fun onError(videoCaptureError: Int, message: String, cause: Throwable?) {
-                        // This function is called if there is an error during recording process
-                        animateRecord.cancel()
-                        val msg = "Video capture failed: $message"
-                        Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
-                        Log.e(TAG, msg)
-                        cause?.printStackTrace()
-                    }
-                })
-        } else {
+        if (recording != null) {
             animateRecord.cancel()
-            localVideoCapture.stopRecording()
+            recording?.stop()
         }
+        val name = "CameraX-recording-${System.currentTimeMillis()}.mp4"
+        val contentValues = ContentValues().apply {
+            put(MediaStore.Video.Media.DISPLAY_NAME, name)
+        }
+        val mediaStoreOutput = MediaStoreOutputOptions.Builder(
+            requireContext().contentResolver,
+            MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+        )
+            .setContentValues(contentValues)
+            .build()
+        recording = videoCapture?.output
+            ?.prepareRecording(requireContext(), mediaStoreOutput)
+            ?.withAudioEnabled()
+            ?.start(ContextCompat.getMainExecutor(requireContext())) { event ->
+                when (event) {
+                    is VideoRecordEvent.Start -> {
+                        animateRecord.start()
+                    }
+                    is VideoRecordEvent.Finalize -> {
+                        if (!event.hasError()) {
+                            val msg = "Video capture succeeded: " +
+                                    "${event.outputResults.outputUri}"
+                            Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT)
+                                .show()
+                            Log.d(TAG, msg)
+                        } else {
+                            recording?.close()
+                            recording = null
+                            Log.e(TAG, "Video capture ends with error: " +
+                                    "${event.error}")
+                        }
+                    }
+                }
+            }
         isRecording = !isRecording
     }
 
@@ -375,12 +378,12 @@ class VideoFragment : BaseFragment<FragmentVideoBinding>(R.layout.fragment_video
                 placeholder(R.drawable.ic_no_picture)
                 transformations(CircleCropTransformation())
                 listener(object : ImageRequest.Listener {
-                    override fun onError(request: ImageRequest, throwable: Throwable) {
-                        super.onError(request, throwable)
+                    override fun onError(request: ImageRequest, result: ErrorResult) {
+                        super.onError(request, result)
                         binding.btnGallery.load(savedUri) {
                             placeholder(R.drawable.ic_no_picture)
                             transformations(CircleCropTransformation())
-                            fetcher(VideoFrameUriFetcher(requireContext()))
+//                            fetcher(VideoFrameUriFetcher(requireContext()))
                         }
                     }
                 })

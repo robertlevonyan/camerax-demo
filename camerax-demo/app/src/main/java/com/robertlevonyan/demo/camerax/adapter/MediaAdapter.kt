@@ -6,7 +6,6 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import coil.fetch.VideoFrameUriFetcher
 import coil.load
 import com.robertlevonyan.demo.camerax.R
 import com.robertlevonyan.demo.camerax.utils.layoutInflater
@@ -47,11 +46,7 @@ class MediaAdapter(
 
         fun bind(item: Media) {
             imagePlay.visibility = if (item.isVideo) View.VISIBLE else View.GONE
-            imagePreview.load(item.uri) {
-                if (item.isVideo) {
-                    fetcher(VideoFrameUriFetcher(itemView.context))
-                }
-            }
+            imagePreview.load(item.uri)
             imagePreview.setOnClickListener { onItemClick(item.isVideo, item.uri) }
         }
     }
