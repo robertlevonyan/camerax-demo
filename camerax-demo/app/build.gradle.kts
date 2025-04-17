@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    compileSdk = 34
+    compileSdk = 35
     defaultConfig {
         applicationId = "com.robertlevonyan.demo.camerax"
         minSdk = 21
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -34,26 +34,22 @@ android {
 }
 
 dependencies {
-    implementation(kotlin("stdlib"))
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-
-    implementation("com.google.android.material:material:1.11.0-beta01")
-
-    implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("androidx.core:core-ktx:1.12.0")
-    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
-    implementation("androidx.camera:camera-core:1.4.0-alpha02")
-    implementation("androidx.camera:camera-camera2:1.4.0-alpha02")
-    implementation("androidx.camera:camera-lifecycle:1.4.0-alpha02")
-    implementation("androidx.camera:camera-extensions:1.4.0-alpha02")
-    implementation("androidx.camera:camera-view:1.4.0-alpha02")
-    implementation("androidx.fragment:fragment:1.6.1")
-    implementation("androidx.fragment:fragment-ktx:1.6.1")
-    implementation("androidx.navigation:navigation-fragment-ktx:2.7.4")
-    implementation("androidx.navigation:navigation-ui-ktx:2.7.4")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
-    implementation("androidx.viewpager2:viewpager2:1.0.0")
-
-    implementation("io.coil-kt:coil:2.4.0")
-    implementation("io.coil-kt:coil-video:2.4.0")
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.material)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.core.ktx)
+    implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.extensions)
+    implementation(libs.androidx.camera.view)
+    implementation(libs.androidx.fragment.ktx)
+    implementation(libs.androidx.navigation.fragment.ktx)
+    implementation(libs.androidx.navigation.ui.ktx)
+    implementation(libs.lifecycle.runtime.ktx)
+    implementation(libs.androidx.viewpager2)
+    implementation(libs.coil)
+    implementation(libs.coil.video)
 }
