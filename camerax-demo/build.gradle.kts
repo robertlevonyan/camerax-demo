@@ -1,20 +1,8 @@
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.21")
-        classpath("com.android.tools.build:gradle:8.9.1")
-        classpath("androidx.navigation:navigation-safe-args-gradle-plugin:2.7.4")
-    }
-}
-
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
+plugins {
+    alias(libs.plugins.android.application) apply false
+    alias(libs.plugins.kotlin.android) apply false
+    alias(libs.plugins.ksp) apply false
+    alias(libs.plugins.android.nav.safeargs) apply false
 }
 
 tasks.register("clean", Delete::class) {

@@ -1,0 +1,71 @@
+[versions]
+androidGradlePlugin = "8.9.1"
+androidxComposeBom = "2025.04.00"
+activityKtx = "1.10.1"
+gmsPlugin = "4.4.2"
+firebaseCrashlyticsPlugin = "3.0.3"
+ksp = "2.1.20-2.0.0"
+kotlin = "2.1.20"
+kotlinSerialization = "1.8.1"
+kotlinxCoroutines = "1.10.2"
+material = "1.12.0"
+playServicesCast = "22.0.0"
+firebaseBom = "33.12.0"
+coreKtx = "1.16.0"
+multidex = "2.0.1"
+room = "2.7.0"
+composePaging = "3.3.6"
+composeCoil = "2.7.0"
+constraintLayout = "1.1.1"
+lifecycle = "2.8.7"
+decompose = "3.0.0-alpha07"
+koin = "4.0.0"
+navigation = "2.8.9"
+
+[libraries]
+kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
+kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinSerialization" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+play-services-cast = { group = "com.google.android.gms", name = "play-services-cast-framework", version.ref = "playServicesCast" }
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
+firebase-analytics-ktx = { group = "com.google.firebase", name = "firebase-analytics-ktx" }
+firebase-crashlytics-ktx = { group = "com.google.firebase", name = "firebase-crashlytics-ktx" }
+firebase-firestore-ktx = { group = "com.google.firebase", name = "firebase-firestore-ktx" }
+core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+multidex = { group = "androidx.multidex", name = "multidex", version.ref = "multidex" }
+lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
+room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+room-paging = { group = "androidx.room", name = "room-paging", version.ref = "room" }
+room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "androidxComposeBom" }
+androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-compose-material3-windowsize = { group = "androidx.compose.material3", name = "material3-window-size-class" }
+androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation" }
+androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
+androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityKtx" }
+compose-paging = { group = "androidx.paging", name = "paging-compose", version.ref = "composePaging" }
+constraintlayout-compose = { group = "androidx.constraintlayout", name = "constraintlayout-compose", version.ref = "constraintLayout" }
+compose-coil = { group = "io.coil-kt", name = "coil-compose", version.ref = "composeCoil" }
+decompose = { group = "com.arkivanov.decompose", name = "decompose", version.ref = "decompose" }
+decompose-extensions-compose = { group = "com.arkivanov.decompose", name = "extensions-compose", version.ref = "decompose" }
+koin-android = { group = "io.insert-koin", name = "koin-android", version.ref = "koin" }
+koin-core = { group = "io.insert-koin", name = "koin-core", version.ref = "koin" }
+
+[bundles]
+firebase = ["firebase-analytics-ktx", "firebase-crashlytics-ktx", "firebase-firestore-ktx"]
+compose = ["androidx-compose-material3", "androidx-compose-material3-windowsize", "androidx-compose-foundation", "androidx-compose-ui", "androidx-compose-ui-tooling"]
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
+android-library = { id = "com.android.library", version.ref = "androidGradlePlugin" }
+gms = { id = "com.google.gms.google-services", version.ref = "gmsPlugin" }
+firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebaseCrashlyticsPlugin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+android-nav-safeargs = { id = "androidx.navigation.safeargs.kotlin", version.ref = "navigation" }

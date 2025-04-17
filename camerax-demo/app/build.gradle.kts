@@ -1,8 +1,7 @@
 plugins {
-    id("com.android.application")
-    kotlin("android")
-//    kotlin("kapt")
-    id("androidx.navigation.safeargs")
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.android.nav.safeargs)
 }
 
 android {
